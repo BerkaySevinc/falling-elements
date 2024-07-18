@@ -3,6 +3,7 @@ using System.Windows.Forms;
 using WorldSimulation;
 
 
+// TODO: 5 li atýnca yer deðiþtirme sorununu çöz., particle lara onground, isfalling gibi proplar verilebilir. altýndaki freefallingdeyse diagonaller çalýþmaz böylece havada diagonal yer deðiþimi olmaz
 
 
 namespace Falling_Elements
@@ -52,6 +53,12 @@ namespace Falling_Elements
                 g.FillRectangle(new SolidBrush(BackColor), 0, 0, 100, 25);
                 g.DrawString("FPS: " + fps, new Font("Consolas", 12), Brushes.White, 0, 0);
 
+                //lock (world.MovableSolidParticles)
+                //{
+                //    lblMovableSolidCount.Text = "Movable Solid Count: " + world.MovableSolidParticles.Count;
+                //    lblParticlesOnGround.Text = "Particles on Ground: " + (world.MovableSolidParticles.Count(p => p.Coordinates.Y >= world.Height - 1));
+                //}
+
                 FpsCounter.StopFrame();
             }
         }
@@ -67,7 +74,7 @@ namespace Falling_Elements
 
                 var brush = particle is null ? emptyBrush : new SolidBrush(particle.Color);
 
-                g.FillRectangle(brush, x * scale, y * scale, scale, scale);
+                g.FillRectangle(brush, x * scale, y * scale + drawSpace, scale, scale);
             }
         }
 
@@ -78,7 +85,7 @@ namespace Falling_Elements
         {
             if (e.Button is not MouseButtons.Left) return;
 
-            mouseLocation = e.Location;
+            mouseLocation = new System.Drawing.Point(e.X, e.Y - drawSpace);
             isMouseButtonLeftDown = true;
 
             Task.Run(() =>
@@ -105,7 +112,7 @@ namespace Falling_Elements
         {
             if (e.Button is not MouseButtons.Left) return;
 
-            mouseLocation = e.Location;
+            mouseLocation = new System.Drawing.Point(e.X, e.Y - drawSpace);
         }
 
 

@@ -9,9 +9,10 @@ using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
+
+
+
 namespace WorldSimulation;
-
-
 
 public class World
 {
@@ -47,21 +48,11 @@ public class World
         // Adds to newly created particle list.
         lock (createdParticles)
             createdParticles.Add(particle);
-
-        // Adds to particle lists.
-        if (particle is IMovableSolid movableSolidParticle)
-            lock (MovableSolidParticles)
-            {
-                MovableSolidParticles.Add(movableSolidParticle);
-            }
-
-        Grid[floorX, floorY] = particle;
     }
 
 
     Random random = new();
     Stopwatch deltaTimer = new();
-    public List<IMovableSolid> MovableSolidParticles = new();
     public Dictionary<Point, IParticle?> Update()
     {
         // Calculates delta time.
@@ -76,37 +67,46 @@ public class World
             {
                 foreach (var particle in createdParticles)
                 {
+                    // Gets particle coordinates info.
+                    var (floorX, floorY) = particle.Coordinates.Floor();
+
+                    // Adds particle to grid.
+                    Grid[floorX, floorY] = particle;
+
+                    // Adds to changes.
                     allGridChanges[particle.Coordinates] = particle;
                 }
                 createdParticles.Clear();
-
-                lock (MovableSolidParticles)
-                    MovableSolidParticles = MovableSolidParticles.OrderByDescending(p => p.Coordinates.Y).ToList();
             }
 
-        // Loops trough all movable solid particles.
-        lock (MovableSolidParticles)
-            foreach (var particle in MovableSolidParticles)
+        // Loops through all pixels.
+        for (int floorY = Height - 1; floorY >= 0; floorY--)
+            for (int floorX = Width - 1; floorX >= 0; floorX--)
             {
+                // Gets particle.
+                var particle = Grid[floorX, floorY];
+
+                // Continues if empty.
+                if (particle is null) continue;
+
                 // Gets particle coordinates info.
                 var (x, y) = particle.Coordinates;
-                var (floorX, floorY) = particle.Coordinates.Floor();
 
                 // Checks if particle is movable solid.
-                if (particle is IMovableSolid)
+                if (particle is IMovableSolid movableSolid)
                 {
                     // Continues if it is already on the ground.
                     if (floorY == Height - 1) continue;
 
-                    // Calculates the target height.
-                    var targetY = y + particle.Mass * Gravity * deltaTime;
+                    // Calculates the target altitude.
+                    var targetY = y + movableSolid.Mass * Gravity * deltaTime;
                     var floorTargetY = (int)targetY;
 
                     // Continues if particle is still on the same pixel.
                     if (floorTargetY == floorY)
                     {
                         // Moves to target.
-                        particle.Coordinates = new Point(x, targetY);
+                        movableSolid.Coordinates = new Point(x, targetY);
                         continue;
                     }
 
@@ -114,14 +114,14 @@ public class World
                     float pathY = Math.Min(y + 1, targetY);
                     int floorPathY = floorY + 1;
                     bool positionChanged = false;
-                    Point tempCoordinates = particle.Coordinates;
+                    Point tempCoordinates = movableSolid.Coordinates;
                     for (;
                         floorPathY <= floorTargetY && floorPathY < Height;
                         pathY = Math.Min(pathY + 1, targetY), floorPathY++
                         )
                     {
-                        var (tempX, tempY) = tempCoordinates;
-                        var (floorTempX, floorTempY) = tempCoordinates.Floor();
+                        var (tempX, _) = tempCoordinates;
+                        var (floorTempX, _) = tempCoordinates.Floor();
 
                         // Moves down if its below is empty.
                         if (Grid[floorTempX, floorPathY] is null)
@@ -183,15 +183,15 @@ public class World
                     var (floorResultX, floorResultY) = tempCoordinates.Floor();
 
                     // Moves to target.
-                    particle.Coordinates = tempCoordinates;
+                    movableSolid.Coordinates = tempCoordinates;
 
                     // Applies grid changes.
                     Grid[floorX, floorY] = null;
-                    Grid[floorResultX, floorResultY] = particle;
+                    Grid[floorResultX, floorResultY] = movableSolid;
 
                     // Saves grid changes.
                     allGridChanges[new Point(floorX, floorY)] = null;
-                    allGridChanges[tempCoordinates] = particle;
+                    allGridChanges[tempCoordinates] = movableSolid;
                 }
             }
 
