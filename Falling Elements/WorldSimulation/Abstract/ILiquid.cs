@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace WorldSimulation;
 
-public interface ILiquid : IParticle, IMovable
+public interface ILiquid : IMovableParticle
 {
 
 }

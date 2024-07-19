@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace WorldSimulation;
 
-public interface IMovable
+public interface IMovableParticle : IParticle
 {
     public float Mass { get; }
 }

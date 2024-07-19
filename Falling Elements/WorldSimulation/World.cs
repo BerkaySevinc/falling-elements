@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
@@ -58,8 +59,8 @@ public class World
 
         double radiusSquare = Math.Pow(radius, 2);
 
-        for (int floorY = top; floorY <= bottom; floorY++)
-            for (int floorX = left; floorX <= right; floorX++)
+        for (int floorY = bottom; floorY >= top; floorY--)
+            for (int floorX = right; floorX >= left; floorX--)
             {
                 double dist = Math.Pow(location.X - floorX, 2) + Math.Pow(location.Y - floorY, 2);
                 if (dist > radiusSquare) continue;
@@ -104,8 +105,14 @@ public class World
                     // Gets particle coordinates info.
                     var (floorX, floorY) = particle.Coordinates.Floor();
 
+                    var altitudeParticleList = particlesByAltitude[floorY];
+
+                    // Checks coordinates and removes particle if already exists there.
+                    int index = altitudeParticleList.FindIndex(p => (int)p.Coordinates.X == floorX && (int)p.Coordinates.Y == floorY);
+                    if (index != -1) altitudeParticleList.RemoveAt(index);
+
                     // Adds to particle list.
-                    particlesByAltitude[floorY].Add(particle);
+                    altitudeParticleList.Add(particle);
 
                     // Adds particle to grid.
                     Grid[floorX, floorY] = particle;
@@ -131,51 +138,54 @@ public class World
                 var (x, y) = particle.Coordinates;
                 var floorX = (int)x;
 
+                // Checks if particle is immovable solid.
+                if (particle is IImmovableSolid) continue;
+
                 // Checks if particle is movable solid.
-                if (particle is IMovableSolid movableSolid)
+                if (particle is IMovableParticle movableParticle)
                 {
                     // Continues if it is already on the ground.
                     if (floorY == Height - 1) continue;
 
-                    // Calculates the target altitude.
-                    var targetY = y + movableSolid.Mass * Gravity * deltaTime;
-                    var floorTargetY = (int)targetY;
+                    // Calculates the remaining move.
+                    var remainingMove = movableParticle.Mass * Gravity * deltaTime;
 
-                    // Continues if particle is still on the same pixel.
-                    if (floorTargetY == floorY)
-                    {
-                        // Sets new coordinates.
-                        movableSolid.Coordinates = new Point(x, targetY);
-                        continue;
-                    }
-
-                    // Checks if path is available.
-                    float pathY = Math.Min(y + 1, targetY);
-                    int floorPathY = floorY + 1;
+                    // Checks path and makes move.
                     bool positionChanged = false;
-                    Point tempCoordinates = movableSolid.Coordinates;
-                    for (;
-                        floorPathY <= floorTargetY && floorPathY < Height;
-                        pathY = Math.Min(pathY + 1, targetY), floorPathY++
-                        )
+                    Point currentCoordinates = movableParticle.Coordinates;
+                    for (; remainingMove > 0; remainingMove--)
                     {
-                        var (tempX, _) = tempCoordinates;
-                        var (floorTempX, _) = tempCoordinates.Floor();
+                        // Calculates move.
+                        float move = remainingMove < 1 ? remainingMove : 1;
+
+                        // Gets current coordinates info.
+                        var (currentX, currentY) = currentCoordinates;
+                        var (floorCurrentX, floorCurrentY) = currentCoordinates.Floor();
+
+                        // Gets target coordinates info.
+                        float targetY = currentY + move;
+                        int floorTargetY = (int)targetY;
+
+                        // Breaks if particle is still on the same pixel.
+                        if (floorTargetY == floorCurrentY)
+                        {
+                            // Sets new coordinates.
+                            movableParticle.Coordinates = new Point(currentX, targetY);
+                            break;
+                        }
+
+                        // Sets exactly on the ground if particle gets under it.
+                        if (floorTargetY == Height - 1)
+                        {
+                            targetY = floorTargetY;
+                            remainingMove = 0;
+                        }
 
                         // Moves down if its below is empty.
-                        if (Grid[floorTempX, floorPathY] is null)
+                        if (Grid[floorCurrentX, floorTargetY] is null)
                         {
-                            // Stops if on the ground.
-                            if (floorPathY == Height - 1)
-                            {
-                                // Sets exactly on the ground.
-                                tempCoordinates = new Point(tempX, floorPathY);
-                                positionChanged = true;
-                                break;
-                            }
-
-                            // Sets temp coordinates and continue loop.
-                            tempCoordinates = new Point(tempX, pathY);
+                            // Sets current coordinates and continue loop.
+                            currentCoordinates = new Point(currentX, targetY);
                             positionChanged = true;
                             continue;
                         }
@@ -183,23 +193,19 @@ public class World
                         // Checks diagonals if below is not empty.
                         else
                         {
-                            //Checks diagonals.
+                            // Checks diagonals.
                             bool isLeftDiagonalAvailable =
-                                floorTempX != 0
-                                && Grid[floorTempX - 1, floorPathY] is null;
-                            //&& Grid[floorTempX - 1, floorTempY] is null;
+                                floorCurrentX != 0
+                                && Grid[floorCurrentX - 1, floorTargetY] is null;
+                            //&& Grid[floorCurrentX - 1, floorCurrentY] is null;
 
                             bool isRightDiagonalAvailable =
-                                floorTempX != Width - 1
-                                && Grid[floorTempX + 1, floorPathY] is null;
-                            //&& Grid[floorTempX + 1, floorTempY] is null;
+                                floorCurrentX != Width - 1
+                                && Grid[floorCurrentX + 1, floorTargetY] is null;
+                            //&& Grid[floorCurrentX + 1, floorTargetY] is null;
 
-                            // Continues if nowhere is not available.
-                            if (!isLeftDiagonalAvailable && !isRightDiagonalAvailable)
-                                break;
-
-                            // Moves to available diagonal.
-                            else
+                            // Moves to available diagonal if at least one is available.
+                            if (isLeftDiagonalAvailable || isRightDiagonalAvailable)
                             {
                                 // Gets diagonal direction according to available one or randomly.
                                 int direction =
@@ -207,34 +213,66 @@ public class World
                                     ? random.Next(2) is 0 ? 1 : -1
                                     : isLeftDiagonalAvailable ? -1 : 1;
 
-                                // Sets temp coordinates and continue loop.
-                                tempCoordinates = new Point(tempX + direction, pathY);
+                                // Sets current coordinates and continue loop.
+                                currentCoordinates = new Point(currentX + direction, targetY);
                                 positionChanged = true;
 
                                 continue;
                             }
+
+                            // Moves to sides if diagonals not available and particle is liquid.
+                            else if (movableParticle is ILiquid)
+                            {
+                                // Checks sides.
+                                bool isLeftAvailable =
+                                    floorCurrentX != 0
+                                    && Grid[floorCurrentX - 1, floorCurrentY] is null;
+
+                                bool isRightAvailable =
+                                    floorCurrentX != Width - 1
+                                    && Grid[floorCurrentX + 1, floorCurrentY] is null;
+
+                                // Moves to available side if at least one is available.
+                                if (isLeftAvailable || isRightAvailable)
+                                {
+                                    // Gets direction according to available one or randomly.
+                                    int direction =
+                                        isLeftAvailable && isRightAvailable
+                                        ? random.Next(2) is 0 ? 1 : -1
+                                        : isLeftAvailable ? -1 : 1;
+
+                                    // Sets current coordinates and continue loop.
+                                    currentCoordinates = new Point(currentX + direction, currentY);
+                                    positionChanged = true;
+
+                                    continue;
+                                }
+                            }
+
+                            // Breaks if nowhere is available.
+                            else break;
                         }
                     }
 
                     if (!positionChanged) continue;
 
                     // Gets particle coordinates info.
-                    var (floorResultX, floorResultY) = tempCoordinates.Floor();
+                    var (floorResultX, floorResultY) = currentCoordinates.Floor();
 
                     // Moves to new location in the particle list.
                     altitudeParticleList.RemoveAt(i);
                     particlesByAltitude[floorResultY].Add(particle);
 
                     // Sets new coordinates.
-                    movableSolid.Coordinates = tempCoordinates;
+                    movableParticle.Coordinates = currentCoordinates;
 
                     // Removes from old grid location and applies to changes.
                     Grid[floorX, floorY] = null;
                     allGridChanges[new Point(floorX, floorY)] = null;
 
                     // Adds to new grid location and applies to changes.
-                    allGridChanges[tempCoordinates] = movableSolid;
-                    Grid[floorResultX, floorResultY] = movableSolid;
+                    allGridChanges[currentCoordinates] = movableParticle;
+                    Grid[floorResultX, floorResultY] = movableParticle;
                 }
             }
         }
@@ -242,15 +280,6 @@ public class World
         // Returns all changes.
         return allGridChanges;
     }
-
-    public bool IsOnGround(IParticle particle) => particle.Coordinates.Y == Height - 1;
-    public bool IsEmptyBelow(IParticle particle)
-    {
-        var (floorX, floorY) = particle.Coordinates.Floor();
-
-        return Grid[floorX, floorY + 1] is null;
-    }
-
 
 }
 

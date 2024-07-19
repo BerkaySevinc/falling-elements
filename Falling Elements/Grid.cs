@@ -5,7 +5,6 @@ using WorldSimulation;
 
 
 
-
 namespace Falling_Elements
 {
     public partial class Grid : Form
@@ -28,10 +27,11 @@ namespace Falling_Elements
         {
             world = new World(Width / scale, (Height - 39 - drawSpace) / scale)
             {
-                Gravity = 1F,
+                Gravity = 10F,
             };
 
             particleAddingMethod = world.AddParticle<Sand>;
+            trackBarRadius.Value = 2;
 
             g = CreateGraphics();
 

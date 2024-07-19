@@ -9,7 +9,7 @@ namespace WorldSimulation;
 public struct Water : ILiquid
 {
     public Color Color { get; } = Color.DeepSkyBlue;
-    public float Mass { get; } = 20;
+    public float Mass { get; } = 10;
 
     public Point Coordinates { get; set; }
 
