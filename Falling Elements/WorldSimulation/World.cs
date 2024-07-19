@@ -28,6 +28,12 @@ public class World
         (Width, Height) = (width, height);
 
         Grid = new IParticle?[Width, Height];
+
+        // Creates particles by altitude list.
+        particlesByAltitude = new List<IParticle>[height];
+
+        for (int i = 0; i < Height; i++)
+            particlesByAltitude[i] = new List<IParticle>();
     }
     public World(Size size) : this(size.Width, size.Height) { }
     public World(int size) : this(size, size) { }
@@ -53,6 +59,7 @@ public class World
 
     Random random = new();
     Stopwatch deltaTimer = new();
+    List<IParticle>[] particlesByAltitude;
     public Dictionary<Point, IParticle?> Update()
     {
         // Calculates delta time.
@@ -70,6 +77,9 @@ public class World
                     // Gets particle coordinates info.
                     var (floorX, floorY) = particle.Coordinates.Floor();
 
+                    // Adds to particle list.
+                    particlesByAltitude[floorY].Add(particle);
+
                     // Adds particle to grid.
                     Grid[floorX, floorY] = particle;
 
@@ -79,18 +89,20 @@ public class World
                 createdParticles.Clear();
             }
 
-        // Loops through all pixels.
+        // Loops through all altitudes.
         for (int floorY = Height - 1; floorY >= 0; floorY--)
-            for (int floorX = Width - 1; floorX >= 0; floorX--)
+        {
+            var altitudeParticleList = particlesByAltitude[floorY];
+
+            // Loops through all particles at the altitude.
+            for (int i = altitudeParticleList.Count - 1; i >= 0; i--)
             {
                 // Gets particle.
-                var particle = Grid[floorX, floorY];
-
-                // Continues if empty.
-                if (particle is null) continue;
+                var particle = altitudeParticleList[i];
 
                 // Gets particle coordinates info.
                 var (x, y) = particle.Coordinates;
+                var floorX = (int)x;
 
                 // Checks if particle is movable solid.
                 if (particle is IMovableSolid movableSolid)
@@ -105,7 +117,7 @@ public class World
                     // Continues if particle is still on the same pixel.
                     if (floorTargetY == floorY)
                     {
-                        // Moves to target.
+                        // Sets new coordinates.
                         movableSolid.Coordinates = new Point(x, targetY);
                         continue;
                     }
@@ -182,18 +194,23 @@ public class World
                     // Gets particle coordinates info.
                     var (floorResultX, floorResultY) = tempCoordinates.Floor();
 
-                    // Moves to target.
+                    // Moves to new location in the particle list.
+                    altitudeParticleList.RemoveAt(i);
+                    particlesByAltitude[floorResultY].Add(particle);
+
+                    // Sets new coordinates.
                     movableSolid.Coordinates = tempCoordinates;
 
-                    // Applies grid changes.
+                    // Removes from old grid location and applies to changes.
                     Grid[floorX, floorY] = null;
-                    Grid[floorResultX, floorResultY] = movableSolid;
-
-                    // Saves grid changes.
                     allGridChanges[new Point(floorX, floorY)] = null;
+
+                    // Adds to new grid location and applies to changes.
                     allGridChanges[tempCoordinates] = movableSolid;
+                    Grid[floorResultX, floorResultY] = movableSolid;
                 }
             }
+        }
 
         // Returns all changes.
         return allGridChanges;

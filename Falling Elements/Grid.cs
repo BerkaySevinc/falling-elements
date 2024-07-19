@@ -3,7 +3,8 @@ using System.Windows.Forms;
 using WorldSimulation;
 
 
-// TODO: 5 li atýnca yer deðiþtirme sorununu çöz., particle lara onground, isfalling gibi proplar verilebilir. altýndaki freefallingdeyse diagonaller çalýþmaz böylece havada diagonal yer deðiþimi olmaz
+// TODO : herhangi bi altitude daki listteki elemanlarý rasgele almak daha mý iyi, daha iyisi önce dikey olarak inenleri ayýrýp hareket ettirmek sonra diagonaller
+// TODO : havada yeri deðiþen particle sorununu çöz
 
 
 namespace Falling_Elements
@@ -28,7 +29,7 @@ namespace Falling_Elements
         {
             world = new World(Width / scale, (Height - 39 - drawSpace) / scale)
             {
-                Gravity = 1F,
+                Gravity = 10F,
             };
 
             g = CreateGraphics();
@@ -118,13 +119,14 @@ namespace Falling_Elements
 
         private void AddParticles(int x, int y)
         {
-            world.AddParticle(new Sand(new(x, y)));
-
             world.AddParticle(new Sand(new(x, y + 1)));
-            world.AddParticle(new Sand(new(x, y - 1)));
 
             world.AddParticle(new Sand(new(x + 1, y)));
             world.AddParticle(new Sand(new(x - 1, y)));
+
+            world.AddParticle(new Sand(new(x, y)));
+
+            world.AddParticle(new Sand(new(x, y - 1)));
         }
 
         private void Grid_FormClosed(object sender, FormClosedEventArgs e)
