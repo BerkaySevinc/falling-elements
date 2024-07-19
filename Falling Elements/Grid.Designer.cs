@@ -28,40 +28,102 @@
         /// </summary>
         private void InitializeComponent()
         {
-            lblMovableSolidCount = new Label();
+            lblParticleCount = new Label();
             lblParticlesOnGround = new Label();
+            btnStone = new Panel();
+            btnSand = new Panel();
+            btnWater = new Panel();
+            trackBarRadius = new TrackBar();
+            lblRadius = new Label();
+            ((System.ComponentModel.ISupportInitialize)trackBarRadius).BeginInit();
             SuspendLayout();
             // 
-            // lblMovableSolidCount
+            // lblParticleCount
             // 
-            lblMovableSolidCount.AutoSize = true;
-            lblMovableSolidCount.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
-            lblMovableSolidCount.ForeColor = SystemColors.ButtonHighlight;
-            lblMovableSolidCount.Location = new Point(556, 9);
-            lblMovableSolidCount.Name = "lblMovableSolidCount";
-            lblMovableSolidCount.Size = new Size(158, 21);
-            lblMovableSolidCount.TabIndex = 0;
-            lblMovableSolidCount.Text = "Movable Solid Count:";
+            lblParticleCount.AutoSize = true;
+            lblParticleCount.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
+            lblParticleCount.ForeColor = SystemColors.ButtonHighlight;
+            lblParticleCount.Location = new Point(865, 16);
+            lblParticleCount.Name = "lblParticleCount";
+            lblParticleCount.Size = new Size(113, 21);
+            lblParticleCount.TabIndex = 0;
+            lblParticleCount.Text = "Particle Count: ";
             // 
             // lblParticlesOnGround
             // 
             lblParticlesOnGround.AutoSize = true;
             lblParticlesOnGround.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
             lblParticlesOnGround.ForeColor = SystemColors.ButtonHighlight;
-            lblParticlesOnGround.Location = new Point(273, 9);
+            lblParticlesOnGround.Location = new Point(606, 16);
             lblParticlesOnGround.Name = "lblParticlesOnGround";
             lblParticlesOnGround.Size = new Size(153, 21);
             lblParticlesOnGround.TabIndex = 1;
             lblParticlesOnGround.Text = "Particles on Ground: ";
+            // 
+            // btnStone
+            // 
+            btnStone.BackColor = Color.Silver;
+            btnStone.Cursor = Cursors.Hand;
+            btnStone.Location = new Point(202, 10);
+            btnStone.Name = "btnStone";
+            btnStone.Size = new Size(32, 32);
+            btnStone.TabIndex = 2;
+            btnStone.Click += btnStone_Click;
+            // 
+            // btnSand
+            // 
+            btnSand.BackColor = Color.SandyBrown;
+            btnSand.Cursor = Cursors.Hand;
+            btnSand.Location = new Point(252, 10);
+            btnSand.Name = "btnSand";
+            btnSand.Size = new Size(32, 32);
+            btnSand.TabIndex = 3;
+            btnSand.Click += btnSand_Click;
+            // 
+            // btnWater
+            // 
+            btnWater.BackColor = Color.DeepSkyBlue;
+            btnWater.Cursor = Cursors.Hand;
+            btnWater.Location = new Point(303, 10);
+            btnWater.Name = "btnWater";
+            btnWater.Size = new Size(32, 32);
+            btnWater.TabIndex = 3;
+            btnWater.Click += btnWater_Click;
+            // 
+            // trackBarRadius
+            // 
+            trackBarRadius.Location = new Point(361, 11);
+            trackBarRadius.Minimum = 1;
+            trackBarRadius.Name = "trackBarRadius";
+            trackBarRadius.Size = new Size(100, 45);
+            trackBarRadius.TabIndex = 5;
+            trackBarRadius.Value = 1;
+            trackBarRadius.ValueChanged += trackBarRadius_ValueChanged;
+            // 
+            // lblRadius
+            // 
+            lblRadius.AutoSize = true;
+            lblRadius.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
+            lblRadius.ForeColor = SystemColors.ButtonHighlight;
+            lblRadius.Location = new Point(461, 13);
+            lblRadius.Name = "lblRadius";
+            lblRadius.Size = new Size(19, 21);
+            lblRadius.TabIndex = 6;
+            lblRadius.Text = "1";
             // 
             // Grid
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(10, 12, 13);
-            ClientSize = new Size(760, 450);
+            ClientSize = new Size(1033, 450);
+            Controls.Add(lblRadius);
+            Controls.Add(trackBarRadius);
+            Controls.Add(btnWater);
+            Controls.Add(btnSand);
+            Controls.Add(btnStone);
             Controls.Add(lblParticlesOnGround);
-            Controls.Add(lblMovableSolidCount);
+            Controls.Add(lblParticleCount);
             Name = "Grid";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Falling Elements";
@@ -71,13 +133,19 @@
             MouseDown += Grid_MouseDown;
             MouseMove += Grid_MouseMove;
             MouseUp += Grid_MouseUp;
+            ((System.ComponentModel.ISupportInitialize)trackBarRadius).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
 
         #endregion
 
-        private Label lblMovableSolidCount;
+        private Label lblParticleCount;
         private Label lblParticlesOnGround;
+        private Panel btnStone;
+        private Panel btnSand;
+        private Panel btnWater;
+        private TrackBar trackBarRadius;
+        private Label lblRadius;
     }
 }

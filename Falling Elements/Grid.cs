@@ -3,8 +3,7 @@ using System.Windows.Forms;
 using WorldSimulation;
 
 
-// TODO : herhangi bi altitude daki listteki elemanlarý rasgele almak daha mý iyi, daha iyisi önce dikey olarak inenleri ayýrýp hareket ettirmek sonra diagonaller
-// TODO : havada yeri deðiþen particle sorununu çöz
+
 
 
 namespace Falling_Elements
@@ -19,8 +18,8 @@ namespace Falling_Elements
         }
 
 
-        const int scale = 4;
-        const int drawSpace = 30;
+        const int scale = 5;
+        const int drawSpace = 60;
 
         // Creates world.
         Graphics g;
@@ -29,8 +28,10 @@ namespace Falling_Elements
         {
             world = new World(Width / scale, (Height - 39 - drawSpace) / scale)
             {
-                Gravity = 10F,
+                Gravity = 1F,
             };
+
+            particleAddingMethod = world.AddParticle<Sand>;
 
             g = CreateGraphics();
 
@@ -51,18 +52,16 @@ namespace Falling_Elements
                 Application.DoEvents();
 
                 int fps = (int)FpsCounter.FpsRender;
-                g.FillRectangle(new SolidBrush(BackColor), 0, 0, 100, 25);
-                g.DrawString("FPS: " + fps, new Font("Consolas", 12), Brushes.White, 0, 0);
+                g.FillRectangle(new SolidBrush(BackColor), 0, 0, 100, drawSpace);
+                g.DrawString("FPS: " + fps, new Font("Consolas", 12), Brushes.White, 3, 5);
 
-                //lock (world.MovableSolidParticles)
-                //{
-                //    lblMovableSolidCount.Text = "Movable Solid Count: " + world.MovableSolidParticles.Count;
-                //    lblParticlesOnGround.Text = "Particles on Ground: " + (world.MovableSolidParticles.Count(p => p.Coordinates.Y >= world.Height - 1));
-                //}
+                lblParticleCount.Text = "Particle Count: " + world.ParticleCount;
+                lblParticlesOnGround.Text = "Particles on Ground: " + world.ParticlesOnGroundCount;
 
                 FpsCounter.StopFrame();
             }
         }
+
 
         public void DrawWorld(Dictionary<WorldSimulation.Point, IParticle?> changes)
         {
@@ -117,17 +116,28 @@ namespace Falling_Elements
         }
 
 
+        Action<System.Drawing.Point, int> particleAddingMethod;
         private void AddParticles(int x, int y)
         {
-            world.AddParticle(new Sand(new(x, y + 1)));
-
-            world.AddParticle(new Sand(new(x + 1, y)));
-            world.AddParticle(new Sand(new(x - 1, y)));
-
-            world.AddParticle(new Sand(new(x, y)));
-
-            world.AddParticle(new Sand(new(x, y - 1)));
+            particleAddingMethod.Invoke(new(x, y), radius);
         }
+
+        private void btnStone_Click(object sender, EventArgs e) =>
+            particleAddingMethod = world.AddParticle<Stone>;
+
+        private void btnSand_Click(object sender, EventArgs e) =>
+            particleAddingMethod = world.AddParticle<Sand>;
+
+        private void btnWater_Click(object sender, EventArgs e) =>
+            particleAddingMethod = world.AddParticle<Water>;
+
+        int radius = 1;
+        private void trackBarRadius_ValueChanged(object sender, EventArgs e)
+        {
+            radius = trackBarRadius.Value;
+            lblRadius.Text = radius.ToString();
+        }
+
 
         private void Grid_FormClosed(object sender, FormClosedEventArgs e)
         {

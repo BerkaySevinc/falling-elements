@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace WorldSimulation;
 
-public interface IMovableSolid : ISolid, IMovable
+public interface IGas : IParticle
 {
 
 }

@@ -11,8 +11,8 @@ public struct Sand : IMovableSolid
     public Color Color { get; } = Color.SandyBrown;
     public float Mass { get; } = 30;
 
-
     public Point Coordinates { get; set; }
 
+    public Sand() { }
     public Sand(Point coordinates) => Coordinates = coordinates;
 }

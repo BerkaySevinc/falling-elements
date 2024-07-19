@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Channels;
@@ -18,9 +19,13 @@ public class World
 {
     public int Width { get; }
     public int Height { get; }
+    public IParticle?[,] Grid { get; }
+
     public float Gravity { get; set; } = 10;
 
-    public IParticle?[,] Grid { get; private set; }
+    public int ParticlesOnGroundCount => particlesByAltitude[Height - 1].Count;
+    public int ParticleCount => particlesByAltitude.Sum(l => l.Count);
+
 
 
     public World(int width, int height)
@@ -40,20 +45,42 @@ public class World
 
 
     List<IParticle> createdParticles = new();
-    public void AddParticle<T>(T particle) where T : struct, IParticle
+    public void AddParticle<T>(System.Drawing.Point location, int radius) where T : struct, IParticle
     {
-        var (floorX, floorY) = particle.Coordinates.Floor();
+        if (radius <= 0) return;
 
-        // Returns if outsite of the bounds.
-        if (floorX < 0 || floorX >= Width) return;
-        if (floorY < 0 || floorY >= Height) return;
+        radius--;
 
-        // Returns if particle already exists in the pixel.
-        if (Grid[floorX, floorY]?.GetType() == particle.GetType()) return;
+        int left = location.X - radius;
+        int right = location.X + radius;
+        int top = location.Y - radius;
+        int bottom = location.Y + radius;
 
-        // Adds to newly created particle list.
-        lock (createdParticles)
-            createdParticles.Add(particle);
+        double radiusSquare = Math.Pow(radius, 2);
+
+        for (int floorY = top; floorY <= bottom; floorY++)
+            for (int floorX = left; floorX <= right; floorX++)
+            {
+                double dist = Math.Pow(location.X - floorX, 2) + Math.Pow(location.Y - floorY, 2);
+                if (dist > radiusSquare) continue;
+
+                // Returns if outsite of the bounds.
+                if (floorX < 0 || floorX >= Width) continue;
+                if (floorY < 0 || floorY >= Height) continue;
+
+                // Returns if particle already exists in the pixel.
+                if (Grid[floorX, floorY]?.GetType() == typeof(T)) continue;
+
+                // Creates particle.
+                var particle = new T
+                {
+                    Coordinates = new Point(floorX, floorY)
+                };
+
+                // Adds to newly created particle list.
+                lock (createdParticles)
+                    createdParticles.Add(particle);
+            }
     }
 
 
