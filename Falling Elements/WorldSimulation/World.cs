@@ -24,6 +24,7 @@ public class World
 
     public float Gravity { get; set; } = 10;
 
+    public IEnumerable<IParticle> Particles => particlesByAltitude.SelectMany(l => l);
     public int ParticlesOnGroundCount => particlesByAltitude[Height - 1].Count;
     public int ParticleCount => particlesByAltitude.Sum(l => l.Count);
 
@@ -88,13 +89,13 @@ public class World
     Random random = new();
     Stopwatch deltaTimer = new();
     List<IParticle>[] particlesByAltitude;
-    public Dictionary<Point, IParticle?> Update()
+    public Dictionary<System.Drawing.Point, IParticle?> Update()
     {
         // Calculates delta time.
         var deltaTime = (float)deltaTimer.Elapsed.TotalSeconds;
         deltaTimer.Restart();
 
-        var allGridChanges = new Dictionary<Point, IParticle?>();
+        var gridChanges = new Dictionary<System.Drawing.Point, IParticle?>();
 
         // Adds newly created particles to changes.
         lock (createdParticles)
@@ -118,7 +119,7 @@ public class World
                     Grid[floorX, floorY] = particle;
 
                     // Adds to changes.
-                    allGridChanges[particle.Coordinates] = particle;
+                    gridChanges[(System.Drawing.Point)particle.Coordinates] = particle;
                 }
                 createdParticles.Clear();
             }
@@ -134,12 +135,12 @@ public class World
                 // Gets particle.
                 var particle = altitudeParticleList[i];
 
+                // Checks if particle is immovable solid.
+                if (particle is IImmovableSolid) continue;
+
                 // Gets particle coordinates info.
                 var (x, y) = particle.Coordinates;
                 var floorX = (int)x;
-
-                // Checks if particle is immovable solid.
-                if (particle is IImmovableSolid) continue;
 
                 // Checks if particle is movable solid.
                 if (particle is IMovableParticle movableParticle)
@@ -166,7 +167,7 @@ public class World
                         float targetY = currentY + move;
                         int floorTargetY = (int)targetY;
 
-                        // Breaks if particle is still on the same pixel.
+                        // Breaks if particle is still on the same cell.
                         if (floorTargetY == floorCurrentY)
                         {
                             // Sets new coordinates.
@@ -181,7 +182,7 @@ public class World
                             remainingMove = 0;
                         }
 
-                        // Moves down if its below is empty.
+                        // Moves down if below cell is empty.
                         if (Grid[floorCurrentX, floorTargetY] is null)
                         {
                             // Sets current coordinates and continue loop.
@@ -190,10 +191,10 @@ public class World
                             continue;
                         }
 
-                        // Checks diagonals if below is not empty.
+                        // Checks diagonal cells if below cell is not empty.
                         else
                         {
-                            // Checks diagonals.
+                            // Checks diagonal cells.
                             bool isLeftDiagonalAvailable =
                                 floorCurrentX != 0
                                 && Grid[floorCurrentX - 1, floorTargetY] is null;
@@ -204,10 +205,10 @@ public class World
                                 && Grid[floorCurrentX + 1, floorTargetY] is null;
                             //&& Grid[floorCurrentX + 1, floorTargetY] is null;
 
-                            // Moves to available diagonal if at least one is available.
+                            // Moves to available diagonal cell if at least one cell is available.
                             if (isLeftDiagonalAvailable || isRightDiagonalAvailable)
                             {
-                                // Gets diagonal direction according to available one or randomly.
+                                // Gets diagonal cell direction according to available one or randomly.
                                 int direction =
                                     isLeftDiagonalAvailable && isRightDiagonalAvailable
                                     ? random.Next(2) is 0 ? 1 : -1
@@ -220,10 +221,10 @@ public class World
                                 continue;
                             }
 
-                            // Moves to sides if diagonals not available and particle is liquid.
+                            // Moves to side cells if diagonal cells are not available and particle is liquid.
                             else if (movableParticle is ILiquid)
                             {
-                                // Checks sides.
+                                // Checks side cells.
                                 bool isLeftAvailable =
                                     floorCurrentX != 0
                                     && Grid[floorCurrentX - 1, floorCurrentY] is null;
@@ -232,7 +233,7 @@ public class World
                                     floorCurrentX != Width - 1
                                     && Grid[floorCurrentX + 1, floorCurrentY] is null;
 
-                                // Moves to available side if at least one is available.
+                                // Moves to available side cell if at least one is available.
                                 if (isLeftAvailable || isRightAvailable)
                                 {
                                     // Gets direction according to available one or randomly.
@@ -249,7 +250,7 @@ public class World
                                 }
                             }
 
-                            // Breaks if nowhere is available.
+                            // Breaks if no cell is available.
                             else break;
                         }
                     }
@@ -266,19 +267,19 @@ public class World
                     // Sets new coordinates.
                     movableParticle.Coordinates = currentCoordinates;
 
-                    // Removes from old grid location and applies to changes.
+                    // Removes from old cell location and applies to changes.
                     Grid[floorX, floorY] = null;
-                    allGridChanges[new Point(floorX, floorY)] = null;
+                    gridChanges[new System.Drawing.Point(floorX, floorY)] = null;
 
-                    // Adds to new grid location and applies to changes.
-                    allGridChanges[currentCoordinates] = movableParticle;
+                    // Adds to new cell location and applies to changes.
+                    gridChanges[new System.Drawing.Point(floorResultX, floorResultY)] = movableParticle;
                     Grid[floorResultX, floorResultY] = movableParticle;
                 }
             }
         }
 
         // Returns all changes.
-        return allGridChanges;
+        return gridChanges;
     }
 
 }

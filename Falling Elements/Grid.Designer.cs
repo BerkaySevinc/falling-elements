@@ -35,6 +35,7 @@
             btnWater = new Panel();
             trackBarRadius = new TrackBar();
             lblRadius = new Label();
+            lblChangedCellCount = new Label();
             ((System.ComponentModel.ISupportInitialize)trackBarRadius).BeginInit();
             SuspendLayout();
             // 
@@ -43,7 +44,7 @@
             lblParticleCount.AutoSize = true;
             lblParticleCount.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
             lblParticleCount.ForeColor = SystemColors.ButtonHighlight;
-            lblParticleCount.Location = new Point(865, 16);
+            lblParticleCount.Location = new Point(1066, 16);
             lblParticleCount.Name = "lblParticleCount";
             lblParticleCount.Size = new Size(113, 21);
             lblParticleCount.TabIndex = 0;
@@ -54,7 +55,7 @@
             lblParticlesOnGround.AutoSize = true;
             lblParticlesOnGround.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
             lblParticlesOnGround.ForeColor = SystemColors.ButtonHighlight;
-            lblParticlesOnGround.Location = new Point(606, 16);
+            lblParticlesOnGround.Location = new Point(828, 16);
             lblParticlesOnGround.Name = "lblParticlesOnGround";
             lblParticlesOnGround.Size = new Size(153, 21);
             lblParticlesOnGround.TabIndex = 1;
@@ -111,12 +112,24 @@
             lblRadius.TabIndex = 6;
             lblRadius.Text = "1";
             // 
+            // lblChangedCellCount
+            // 
+            lblChangedCellCount.AutoSize = true;
+            lblChangedCellCount.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
+            lblChangedCellCount.ForeColor = SystemColors.ButtonHighlight;
+            lblChangedCellCount.Location = new Point(597, 16);
+            lblChangedCellCount.Name = "lblChangedCellCount";
+            lblChangedCellCount.Size = new Size(155, 21);
+            lblChangedCellCount.TabIndex = 7;
+            lblChangedCellCount.Text = "Changed Cell Count: ";
+            // 
             // Grid
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(10, 12, 13);
-            ClientSize = new Size(1033, 450);
+            ClientSize = new Size(1251, 450);
+            Controls.Add(lblChangedCellCount);
             Controls.Add(lblRadius);
             Controls.Add(trackBarRadius);
             Controls.Add(btnWater);
@@ -147,5 +160,6 @@
         private Panel btnWater;
         private TrackBar trackBarRadius;
         private Label lblRadius;
+        private Label lblChangedCellCount;
     }
 }

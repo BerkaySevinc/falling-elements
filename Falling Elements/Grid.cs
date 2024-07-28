@@ -1,6 +1,8 @@
 using System.Drawing;
 using System.Windows.Forms;
+
 using WorldSimulation;
+using WorldSimulation.Renderer;
 
 
 
@@ -20,9 +22,11 @@ namespace Falling_Elements
         const int scale = 5;
         const int drawSpace = 60;
 
+
         // Creates world.
-        Graphics g;
+        Graphics graphics;
         World world;
+        WorldRenderer renderer;
         private void Grid_Shown(object sender, EventArgs e)
         {
             world = new World(Width / scale, (Height - 39 - drawSpace) / scale)
@@ -30,54 +34,50 @@ namespace Falling_Elements
                 Gravity = 10F,
             };
 
+            renderer = new WorldRenderer(world, this, new System.Drawing.Point(0, drawSpace));
+
             particleAddingMethod = world.AddParticle<Sand>;
             trackBarRadius.Value = 2;
 
-            g = CreateGraphics();
+            graphics = CreateGraphics();
+            cleanerBrush = new SolidBrush(BackColor);
 
             Render();
         }
 
-        public FpsCounter FpsCounter = new(new(0, 0, 0, 0, 1000));
+        private SolidBrush cleanerBrush;
+        public FpsCounter FpsCounter = new(new(0, 0, 0, 0, 200));
         private void Render()
         {
+            Task drawTask = Task.CompletedTask;
             while (true)
             {
-                FpsCounter.StartFrame();
-
+                // Update world.
                 var changes = world.Update();
 
-                DrawWorld(changes);
+                // Wait for initial drawing to finish.
+                drawTask.Wait();
 
-                Application.DoEvents();
-
+                // Display FPS
                 int fps = (int)FpsCounter.FpsRender;
-                g.FillRectangle(new SolidBrush(BackColor), 0, 0, 100, drawSpace);
-                g.DrawString("FPS: " + fps, new Font("Consolas", 12), Brushes.White, 3, 5);
+                fps = fps > 10000 ? 10000 : fps;
+                graphics.FillRectangle(cleanerBrush, 0, 0, 150, drawSpace);
+                graphics.DrawString("FPS: " + fps, new Font("Consolas", 12), Brushes.White, 30, 16);
 
-                lblParticleCount.Text = "Particle Count: " + world.ParticleCount;
+                // Draw updated world.
+                drawTask = Task.Run(() => renderer.RenderChanges(changes));
+
+                // Display world info.
+                lblChangedCellCount.Text = "Changed Cell Count: " + changes.Count;
                 lblParticlesOnGround.Text = "Particles on Ground: " + world.ParticlesOnGroundCount;
+                lblParticleCount.Text = "Particle Count: " + world.ParticleCount;
 
                 FpsCounter.StopFrame();
+                FpsCounter.StartFrame();
+
+                Application.DoEvents();
             }
         }
-
-
-        public void DrawWorld(Dictionary<WorldSimulation.Point, IParticle?> changes)
-        {
-            var emptyBrush = new SolidBrush(BackColor);
-
-            foreach (var change in changes)
-            {
-                var (x, y) = change.Key.Floor();
-                IParticle? particle = change.Value;
-
-                var brush = particle is null ? emptyBrush : new SolidBrush(particle.Color);
-
-                g.FillRectangle(brush, x * scale, y * scale + drawSpace, scale, scale);
-            }
-        }
-
 
         // Adds particle if left mouse button is held down.
         bool isMouseButtonLeftDown = false;
