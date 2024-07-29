@@ -70,9 +70,6 @@ public class World
                 if (floorX < 0 || floorX >= Width) continue;
                 if (floorY < 0 || floorY >= Height) continue;
 
-                // Returns if particle already exists in the pixel.
-                if (Grid[floorX, floorY]?.GetType() == typeof(T)) continue;
-
                 // Creates particle.
                 var particle = new T
                 {
@@ -93,36 +90,10 @@ public class World
     {
         // Calculates delta time.
         var deltaTime = (float)deltaTimer.Elapsed.TotalSeconds;
+        var deltaGravitation = Gravity * deltaTime;
         deltaTimer.Restart();
 
         var gridChanges = new Dictionary<System.Drawing.Point, IParticle?>();
-
-        // Adds newly created particles to changes.
-        lock (createdParticles)
-            if (createdParticles.Count > 0)
-            {
-                foreach (var particle in createdParticles)
-                {
-                    // Gets particle coordinates info.
-                    var (floorX, floorY) = particle.Coordinates.Floor();
-
-                    var altitudeParticleList = particlesByAltitude[floorY];
-
-                    // Checks coordinates and removes particle if already exists there.
-                    int index = altitudeParticleList.FindIndex(p => (int)p.Coordinates.X == floorX && (int)p.Coordinates.Y == floorY);
-                    if (index != -1) altitudeParticleList.RemoveAt(index);
-
-                    // Adds to particle list.
-                    altitudeParticleList.Add(particle);
-
-                    // Adds particle to grid.
-                    Grid[floorX, floorY] = particle;
-
-                    // Adds to changes.
-                    gridChanges[(System.Drawing.Point)particle.Coordinates] = particle;
-                }
-                createdParticles.Clear();
-            }
 
         // Loops through all altitudes.
         for (int floorY = Height - 1; floorY >= 0; floorY--)
@@ -149,7 +120,10 @@ public class World
                     if (floorY == Height - 1) continue;
 
                     // Calculates the remaining move.
-                    var remainingMove = movableParticle.Mass * Gravity * deltaTime;
+                    float remainingMove = movableParticle.Mass * deltaGravitation;
+
+                    // Gets is particle solid.
+                    bool isParticleSolid = particle is ISolid;
 
                     // Checks path and makes move.
                     bool positionChanged = false;
@@ -182,12 +156,14 @@ public class World
                             remainingMove = 0;
                         }
 
-                        // Moves down if below cell is empty.
-                        if (Grid[floorCurrentX, floorTargetY] is null)
+                        // Moves down if below cell is available.
+                        IParticle? belowParticle = Grid[floorCurrentX, floorTargetY];
+                        if (belowParticle is null)
                         {
                             // Sets current coordinates and continue loop.
                             currentCoordinates = new Point(currentX, targetY);
                             positionChanged = true;
+
                             continue;
                         }
 
@@ -260,27 +236,69 @@ public class World
                     // Gets particle coordinates info.
                     var (floorResultX, floorResultY) = currentCoordinates.Floor();
 
+                    // Sets new coordinates.
+                    movableParticle.Coordinates = currentCoordinates;
+
                     // Moves to new location in the particle list.
                     altitudeParticleList.RemoveAt(i);
                     particlesByAltitude[floorResultY].Add(particle);
 
-                    // Sets new coordinates.
-                    movableParticle.Coordinates = currentCoordinates;
-
                     // Removes from old cell location and applies to changes.
-                    Grid[floorX, floorY] = null;
-                    gridChanges[new System.Drawing.Point(floorX, floorY)] = null;
+                    bool isInitialCellCleared = gridChanges.TryAdd(new System.Drawing.Point(floorX, floorY), null);
+                    if (isInitialCellCleared) Grid[floorX, floorY] = null;
 
                     // Adds to new cell location and applies to changes.
-                    gridChanges[new System.Drawing.Point(floorResultX, floorResultY)] = movableParticle;
                     Grid[floorResultX, floorResultY] = movableParticle;
+                    gridChanges[new System.Drawing.Point(floorResultX, floorResultY)] = movableParticle;
                 }
             }
         }
 
+        // Adds newly created particles to the grid and changes.
+        lock (createdParticles)
+            if (createdParticles.Count > 0)
+            {
+                foreach (var particle in createdParticles)
+                {
+                    // Gets particle coordinates info.
+                    var (floorX, floorY) = particle.Coordinates.Floor();
+                    var location = new System.Drawing.Point(floorX, floorY);
+
+                    var altitudeParticleList = particlesByAltitude[floorY];
+
+                    // Checks coordinates if particle exists.
+                    int index = altitudeParticleList.FindIndex(p => (int)p.Coordinates.X == floorX && (int)p.Coordinates.Y == floorY);
+                    if (index != -1)
+                    {
+                        var existingParticle = altitudeParticleList[index];
+
+                        // Modify coordinates if the particle type is same.
+                        if (existingParticle.GetType() == particle.GetType())
+                        {
+                            existingParticle.Coordinates = location;
+                            continue;
+                        }
+                        // Remove existing particle from list.
+                        else altitudeParticleList.RemoveAt(index);
+                    }
+
+                    // Adds particle to list.
+                    altitudeParticleList.Add(particle);
+
+                    // Adds particle to grid.
+                    Grid[floorX, floorY] = particle;
+
+                    // Adds particle to grid changes.
+                    gridChanges[location] = particle;
+                }
+
+                createdParticles.Clear();
+            }
+
         // Returns all changes.
         return gridChanges;
     }
+
 
 }
 

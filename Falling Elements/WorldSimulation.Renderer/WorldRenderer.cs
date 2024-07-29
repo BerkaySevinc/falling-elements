@@ -17,8 +17,8 @@ public class WorldRenderer
 
 
     private Graphics graphics;
-    private int horizontalScale;
-    private int verticalScale;
+    private float horizontalScale;
+    private float verticalScale;
     public WorldRenderer(World world, Control control, System.Drawing.Point location, Size size)
     {
         World = world;
@@ -26,11 +26,13 @@ public class WorldRenderer
         Location = location;
         Size = size;
 
-        horizontalScale = size.Width / world.Width; 
-        verticalScale = size.Height / world.Height;
+        horizontalScale = (float)size.Width / world.Width; 
+        verticalScale = (float)size.Height / world.Height;
 
         graphics = control.CreateGraphics();
         cleanerBrush = new SolidBrush(control.BackColor);
+
+        control.Resize += (object? sender, EventArgs e) => RenderAll();
     }
     public WorldRenderer(World world, Control control, System.Drawing.Point location) : this(world, control, location, new Size(control.Width - location.X, control.Height - location.Y)) { }
     public WorldRenderer(World world, Control control, Size size) : this(world, control, new(0, 0), size) { }

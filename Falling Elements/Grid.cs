@@ -19,7 +19,7 @@ namespace Falling_Elements
         }
 
 
-        const int scale = 5;
+        const int scale = 4;
         const int drawSpace = 60;
 
 
@@ -34,7 +34,7 @@ namespace Falling_Elements
                 Gravity = 10F,
             };
 
-            renderer = new WorldRenderer(world, this, new System.Drawing.Point(0, drawSpace));
+            renderer = new WorldRenderer(world, this, new(0, drawSpace), new(Width, Height - 39 - drawSpace));
 
             particleAddingMethod = world.AddParticle<Sand>;
             trackBarRadius.Value = 2;
@@ -46,7 +46,7 @@ namespace Falling_Elements
         }
 
         private SolidBrush cleanerBrush;
-        public FpsCounter FpsCounter = new(new(0, 0, 0, 0, 200));
+        public FpsCounter FpsCounter = new(new(0, 0, 0, 0, 50));
         private void Render()
         {
             Task drawTask = Task.CompletedTask;
@@ -61,7 +61,7 @@ namespace Falling_Elements
                 // Display FPS
                 int fps = (int)FpsCounter.FpsRender;
                 fps = fps > 10000 ? 10000 : fps;
-                graphics.FillRectangle(cleanerBrush, 0, 0, 150, drawSpace);
+                graphics.FillRectangle(cleanerBrush, 0, 0, 200, drawSpace);
                 graphics.DrawString("FPS: " + fps, new Font("Consolas", 12), Brushes.White, 30, 16);
 
                 // Draw updated world.
