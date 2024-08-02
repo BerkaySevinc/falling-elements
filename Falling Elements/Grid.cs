@@ -6,6 +6,34 @@ using WorldSimulation.Renderer;
 
 
 
+//! PARTICLE SAYISI NORMALÝN ÜSTÜNE ÇIKIYO BAZILARI YOK OLUYO GRÝDDEN AMA LÝSTTE KALIYO (sularýn replace mekaniðiyle ilgili sanýrým) AYRICA SULAR WORLDUN ÜSTÜNE DE ÇIKABÝLÝO WORLD DOLUNCA FLN ORDAN DA SAYISI ARTIYO
+
+
+
+//! GUI & Demo
+// TODO : scale & reset settings ui
+// TODO : grid kodlarýný iyileþtir, seçilen particlý belirt arkasýna panel koyarak vs.
+// TODO : son 1 saniyede fps droplarýný gösteren bi indicatör koy ekrana
+// TODO : particllarý silme seçeneði
+
+//! MEKANÝKLER
+// TODO : kumun batmasý
+// TODO : water hýzýný arttýr tek seferde 5 blok vs. gidebilsin, algoritma çoðu þeyi y'ye göre hesaplýyo
+// TODO : havada yeri deðiþen particle sorununu çöz
+// çaprazdan replace edince çapraza deil üste çýkmalý
+// aþþadan replace edincede yukarýsý yerine nullda yanlara çýkmasý daha mantýklý gibi
+
+//! OPTÝMÝZASYON
+// UNDONE : DRAWÝNG OPTÝMÝZASYONU OLARAK SADECE LÝNE OLARAK EN BÜYÜÐÜ ALIYO, ONUN YERÝNE EN BÜYÜK DÖRTGENÝ SEÇMELÝ VE ÇÝZMELÝ
+// TODO : çok emin deðilim ama update kýsmýnda optimizasyon olarak tüm particlelarý deðilde, sadece movingleri looplamanýn bi yolu varmý?
+// TODO : multithreading ekle
+// TODO : isStopping/Stopped gibi biþey eklenebilir, altýndaki duruyosa o da duruyo olur, hareket etmeye baþlayýnca üstteki particleýn da isstopping ini false yapar, (böylece sadece hareket edenlere loop atabiliriz)
+
+//! DÝÐER
+// TODO : herhangi bi altitude daki listteki elemanlarý rasgele almak daha mý iyi, daha iyisi önce dikey olarak inenleri ayýrýp hareket ettirmek sonra diagonaller
+// TODO : Update deðiþim eþiði gibi biþey olmalý, çünkü scale büyük olduðunda, bir pixel 0.5 ilerlediðinde gridchanges e girmio bu yüzden ekranda smooth ilerleyemio
+
+
 
 namespace Falling_Elements
 {
@@ -19,7 +47,7 @@ namespace Falling_Elements
         }
 
 
-        const int scale = 4;
+        const int scale = 5;
         const int drawSpace = 60;
 
 
@@ -34,7 +62,13 @@ namespace Falling_Elements
                 Gravity = 10F,
             };
 
-            renderer = new WorldRenderer(world, this, new(0, drawSpace), new(Width, Height - 39 - drawSpace));
+            renderer = new WorldRenderer(world, this, new(0, drawSpace), new(Width, Height - 39 - drawSpace))
+            {
+
+            };
+
+            renderer.MouseDown += RendererMouseDown;
+            renderer.MouseUp += RendererMouseUp;
 
             particleAddingMethod = world.AddParticle<Sand>;
             trackBarRadius.Value = 2;
@@ -62,7 +96,11 @@ namespace Falling_Elements
                 int fps = (int)FpsCounter.FpsRender;
                 fps = fps > 10000 ? 10000 : fps;
                 graphics.FillRectangle(cleanerBrush, 0, 0, 200, drawSpace);
-                graphics.DrawString("FPS: " + fps, new Font("Consolas", 12), Brushes.White, 30, 16);
+                graphics.DrawString(
+                    "FPS: " + fps, 
+                    new Font("Consolas", 12),
+                    fps > 60 ? Brushes.White : fps > 30 ? Brushes.Yellow : Brushes.Red,
+                    30, 16);
 
                 // Draw updated world.
                 drawTask = Task.Run(() => renderer.RenderChanges(changes));
@@ -79,47 +117,54 @@ namespace Falling_Elements
             }
         }
 
+
         // Adds particle if left mouse button is held down.
         bool isMouseButtonLeftDown = false;
-        private void Grid_MouseDown(object? sender, MouseEventArgs e)
+        private void RendererMouseDown(object? sender, MouseDownEventArgs e)
         {
             if (e.Button is not MouseButtons.Left) return;
 
-            mouseLocation = new System.Drawing.Point(e.X, e.Y - drawSpace);
+            mouseWorldLocation = e.WorldLocation;
             isMouseButtonLeftDown = true;
+
+            renderer.MouseMove += RendererMouseMove;
 
             Task.Run(() =>
             {
-                AddParticles(mouseLocation.X / scale, mouseLocation.Y / scale);
+                AddParticles(mouseWorldLocation);
 
                 Thread.Sleep(300);
 
                 while (isMouseButtonLeftDown)
                 {
                     Thread.Sleep(20);
-                    AddParticles(mouseLocation.X / scale, mouseLocation.Y / scale);
+                    AddParticles(mouseWorldLocation);
                 }
             });
         }
-        private void Grid_MouseUp(object sender, MouseEventArgs e)
+
+        private void RendererMouseUp(object? sender, MouseUpEventArgs e)
         {
             if (e.Button is not MouseButtons.Left) return;
 
             isMouseButtonLeftDown = false;
+
+            renderer.MouseMove -= RendererMouseMove;
         }
-        System.Drawing.Point mouseLocation;
-        private void Grid_MouseMove(object? sender, MouseEventArgs e)
+
+        System.Drawing.Point mouseWorldLocation;
+        private void RendererMouseMove(object? sender, MouseMoveEventArgs e)
         {
             if (e.Button is not MouseButtons.Left) return;
 
-            mouseLocation = new System.Drawing.Point(e.X, e.Y - drawSpace);
+            mouseWorldLocation = e.WorldLocation;
         }
 
 
         Action<System.Drawing.Point, int> particleAddingMethod;
-        private void AddParticles(int x, int y)
+        private void AddParticles(System.Drawing.Point worldLocation)
         {
-            particleAddingMethod.Invoke(new(x, y), radius);
+            particleAddingMethod.Invoke(worldLocation, radius);
         }
 
         private void btnStone_Click(object sender, EventArgs e) =>

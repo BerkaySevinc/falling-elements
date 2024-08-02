@@ -156,30 +156,54 @@ public class World
                             remainingMove = 0;
                         }
 
+                        bool positionReplaced = false;
+                        IParticle? replacedParticle = null;
+
                         // Moves down if below cell is available.
                         IParticle? belowParticle = Grid[floorCurrentX, floorTargetY];
-                        if (belowParticle is null)
+                        if (belowParticle is null || (isParticleSolid && belowParticle is not ISolid))
                         {
+                            positionChanged = true;
+                            if (belowParticle is not null)
+                            {
+                                positionReplaced = true;
+                                replacedParticle = belowParticle;
+                            }
+
                             // Sets current coordinates and continue loop.
                             currentCoordinates = new Point(currentX, targetY);
-                            positionChanged = true;
-
-                            continue;
                         }
 
                         // Checks diagonal cells if below cell is not empty.
                         else
                         {
-                            // Checks diagonal cells.
-                            bool isLeftDiagonalAvailable =
-                                floorCurrentX != 0
-                                && Grid[floorCurrentX - 1, floorTargetY] is null;
-                            //&& Grid[floorCurrentX - 1, floorCurrentY] is null;
+                            // Checks left diagonal cell.
+                            IParticle? leftDiagonalParticle = null;
+                            bool isLeftDiagonalAvailable = false;
 
-                            bool isRightDiagonalAvailable =
-                                floorCurrentX != Width - 1
-                                && Grid[floorCurrentX + 1, floorTargetY] is null;
-                            //&& Grid[floorCurrentX + 1, floorTargetY] is null;
+                            if (floorCurrentX != 0)
+                            {
+                                leftDiagonalParticle = Grid[floorCurrentX - 1, floorTargetY];
+
+                                isLeftDiagonalAvailable =
+                                    leftDiagonalParticle is null
+                                    || (isParticleSolid && leftDiagonalParticle is not ISolid);
+                                //&& Grid[floorCurrentX - 1, floorCurrentY] is null;
+                            }
+
+                            // Checks right diagonal cell.
+                            IParticle? rightDiagonalParticle = null;
+                            bool isRightDiagonalAvailable = false;
+
+                            if (floorCurrentX != Width - 1)
+                            {
+                                rightDiagonalParticle = Grid[floorCurrentX + 1, floorTargetY];
+
+                                isRightDiagonalAvailable =
+                                    rightDiagonalParticle is null
+                                    || (isParticleSolid && rightDiagonalParticle is not ISolid);
+                                //&& Grid[floorCurrentX + 1, floorTargetY] is null;
+                            }
 
                             // Moves to available diagonal cell if at least one cell is available.
                             if (isLeftDiagonalAvailable || isRightDiagonalAvailable)
@@ -190,11 +214,17 @@ public class World
                                     ? random.Next(2) is 0 ? 1 : -1
                                     : isLeftDiagonalAvailable ? -1 : 1;
 
+                                IParticle? targetParticle = direction == 1 ? rightDiagonalParticle : leftDiagonalParticle; ;
+
+                                positionChanged = true;
+                                if (targetParticle is not null)
+                                {
+                                    positionReplaced = true;
+                                    replacedParticle = targetParticle;
+                                }
+
                                 // Sets current coordinates and continue loop.
                                 currentCoordinates = new Point(currentX + direction, targetY);
-                                positionChanged = true;
-
-                                continue;
                             }
 
                             // Moves to side cells if diagonal cells are not available and particle is liquid.
@@ -218,16 +248,32 @@ public class World
                                         ? random.Next(2) is 0 ? 1 : -1
                                         : isLeftAvailable ? -1 : 1;
 
+                                    positionChanged = true;
+                                    
                                     // Sets current coordinates and continue loop.
                                     currentCoordinates = new Point(currentX + direction, currentY);
-                                    positionChanged = true;
 
                                     continue;
                                 }
                             }
+                        }
 
-                            // Breaks if no cell is available.
-                            else break;
+                        // Breaks if no cell is available.
+                        if (!positionChanged) break;
+
+                        // Replace particle.
+                        if (positionReplaced)
+                        {
+                            // Sets replaced particle coordinates.
+                            replacedParticle!.Coordinates = new Point(currentX, currentY);
+
+                            // Moves replaced particle to location in the particle list.
+                            particlesByAltitude[floorTargetY].Remove(replacedParticle);
+                            particlesByAltitude[floorCurrentY].Add(replacedParticle);
+
+                            // Adds replaced particle to new cell location and applies to changes.
+                            gridChanges[new System.Drawing.Point(floorCurrentX, floorCurrentY)] = replacedParticle;
+                            Grid[floorCurrentX, floorCurrentY] = replacedParticle;
                         }
                     }
 

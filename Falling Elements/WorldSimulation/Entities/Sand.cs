@@ -9,7 +9,7 @@ namespace WorldSimulation;
 public struct Sand : IMovableSolid
 {
     public Color Color { get; } = Color.SandyBrown;
-    public float Mass { get; } = 15;
+    public float Mass { get; } = 12;
 
     public Point Coordinates { get; set; }
 

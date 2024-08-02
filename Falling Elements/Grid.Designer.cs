@@ -143,9 +143,6 @@
             WindowState = FormWindowState.Maximized;
             FormClosed += Grid_FormClosed;
             Shown += Grid_Shown;
-            MouseDown += Grid_MouseDown;
-            MouseMove += Grid_MouseMove;
-            MouseUp += Grid_MouseUp;
             ((System.ComponentModel.ISupportInitialize)trackBarRadius).EndInit();
             ResumeLayout(false);
             PerformLayout();
