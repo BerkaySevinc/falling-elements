@@ -143,30 +143,27 @@ public class WorldRenderer
 
 
 
-    public void RenderChanges(Dictionary<System.Drawing.Point, IParticle?> cells)
+    public void RenderChanges(RenderingUpdates renderingUpdates)
     {
         // Returns if there is no change.
-        if (cells.Count is 0) return;
+        if (renderingUpdates.Updates.Count is 0) return;
 
         // Draws change lines.
-        DrawLines(DetectLines(cells));
+        DrawLines(DetectLines(renderingUpdates));
     }
 
     public void RenderAll()
     {
-        var cells = new Dictionary<System.Drawing.Point, IParticle?>();
+        var renderingUpdates = new RenderingUpdates();
 
         foreach (var particle in World.Particles)
-        {
-            var (floorX, floorY) = particle.Coordinates.Floor();
-            cells.Add(new System.Drawing.Point(floorX, floorY), particle);
-        }
+            renderingUpdates.Add((particle.GridX, particle.GridY), (null, particle.Color));
 
         // Clears grid.
         Clear();
 
         // Renders particles.
-        RenderChanges(cells);
+        RenderChanges(renderingUpdates);
     }
 
     public void Clear()
@@ -174,27 +171,31 @@ public class WorldRenderer
         graphics.FillRectangle(cleanerBrush, new Rectangle(Location, Size));
     }
 
-    private List<(int y, int left, int right, Color? color)> DetectLines(Dictionary<System.Drawing.Point, IParticle?> cells)
+    private List<(int y, int left, int right, Color? color)> DetectLines(RenderingUpdates renderingUpdates)
     {
         // Orders cells by "y", then "x".
-        var orderedCells = cells.OrderBy(c => c.Key.Y).ThenBy(c => c.Key.X).ToList();
+        var orderedChanges = 
+            renderingUpdates.Updates
+            .OrderBy(c => c.Key.y)
+            .ThenBy(c => c.Key.x)
+            .ToList();
 
         // Gets first cell as a line.
-        var firstChange = orderedCells.First();
-        (int y, int left, int right, Color? color) targetLine = (firstChange.Key.Y, firstChange.Key.X, firstChange.Key.X, firstChange.Value?.Color);
+        var firstChange = orderedChanges.First();
+        (int y, int left, int right, Color? color) targetLine = (firstChange.Key.y, firstChange.Key.x, firstChange.Key.x, firstChange.Value.newColor);
 
         // Creates list with first line to keep all lines to draw.
-        List<(int y, int left, int right, Color? color)> lines = new() { targetLine };
+        var lines = new List<(int y, int left, int right, Color? color)>();
 
         // Detects bigger horizontal lines to draw at once.
-        for (int i = 1; i < orderedCells.Count; i++)
+        for (int i = 1; i < orderedChanges.Count; i++)
         {
-            var cell = orderedCells[i];
+            var cell = orderedChanges[i];
 
             // Gets cell info.
-            int x = cell.Key.X;
-            int y = cell.Key.Y;
-            var color = cell.Value?.Color;
+            int x = cell.Key.x;
+            int y = cell.Key.y;
+            var color = cell.Value.newColor;
 
             // Checks if the cell is continuation of the line.
             if (x == (targetLine.right + 1) && y == targetLine.y && color == targetLine.color)
@@ -272,9 +273,7 @@ public class WorldRenderer
     {
         if (MouseUp is null) return;
 
-        var targetLocation = GetWorldLocation(e.Location);
-
-        if (targetLocation is not System.Drawing.Point worldLocation) return;
+        var worldLocation = GetWorldLocation(e.Location);
 
         var args = new MouseUpEventArgs(e.Button, e.Location, worldLocation);
         OnMouseUp(args);

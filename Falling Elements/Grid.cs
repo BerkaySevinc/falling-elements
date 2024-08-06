@@ -6,6 +6,15 @@ using WorldSimulation.Renderer;
 
 
 
+
+// particlesByAltitude public bi field öyle olmamalý o kýsýmlarý düzenle
+// fps yükselt
+// renderingi iyileþtir
+// update de threading uygulanabilirmi?
+
+// stepte direk IterateAndApplyToTargetCell kullanmak yerine, IterateAndApplyToTargetCell i kullanan direk MoveWithPath (method ismini tekrar düþün) gibi bir method oluþtur func alsýn içine (hem her bir movayabilirmi için bi func olabilir yada gerek kalmaz belki, hem de oncollisionoccured da çalýþýcak baþka bi func alabilir) o þekilde hem worldun boundlarýna çarpmayý hem particlelarla etkileþimi hesaplayan baþka bir method oluþtur onu kullan stepte
+
+
 //! PARTICLE SAYISI NORMALÝN ÜSTÜNE ÇIKIYO BAZILARI YOK OLUYO GRÝDDEN AMA LÝSTTE KALIYO (sularýn replace mekaniðiyle ilgili sanýrým) AYRICA SULAR WORLDUN ÜSTÜNE DE ÇIKABÝLÝO WORLD DOLUNCA FLN ORDAN DA SAYISI ARTIYO
 
 
@@ -19,6 +28,7 @@ using WorldSimulation.Renderer;
 //! MEKANÝKLER
 // TODO : kumun batmasý
 // TODO : water hýzýný arttýr tek seferde 5 blok vs. gidebilsin, algoritma çoðu þeyi y'ye göre hesaplýyo
+// TODO : vectör ile velocity fln koy hep ayný hýzda düþüyo particlelar
 // TODO : havada yeri deðiþen particle sorununu çöz
 // çaprazdan replace edince çapraza deil üste çýkmalý
 // aþþadan replace edincede yukarýsý yerine nullda yanlara çýkmasý daha mantýklý gibi
@@ -62,7 +72,7 @@ namespace Falling_Elements
                 Gravity = 10F,
             };
 
-            renderer = new WorldRenderer(world, this, new(0, drawSpace), new(Width, Height - 39 - drawSpace))
+            renderer = new WorldRenderer(world, this, new(0, drawSpace), new(Width - 16, Height - 39 - drawSpace))
             {
 
             };
@@ -87,7 +97,7 @@ namespace Falling_Elements
             while (true)
             {
                 // Update world.
-                var changes = world.Update();
+                var renderingUpdates = world.Update();
 
                 // Wait for initial drawing to finish.
                 drawTask.Wait();
@@ -97,16 +107,17 @@ namespace Falling_Elements
                 fps = fps > 10000 ? 10000 : fps;
                 graphics.FillRectangle(cleanerBrush, 0, 0, 200, drawSpace);
                 graphics.DrawString(
-                    "FPS: " + fps, 
+                    "FPS: " + fps,
                     new Font("Consolas", 12),
                     fps > 60 ? Brushes.White : fps > 30 ? Brushes.Yellow : Brushes.Red,
                     30, 16);
 
                 // Draw updated world.
-                drawTask = Task.Run(() => renderer.RenderChanges(changes));
+                drawTask = Task.Run(() => renderer.RenderChanges(renderingUpdates));
 
                 // Display world info.
-                lblChangedCellCount.Text = "Changed Cell Count: " + changes.Count;
+                lblRenderedCellCount.Text = "Rendered Cell Count: " + renderingUpdates.Updates.Count;
+                lblMovingParticleCount.Text = "Moving Particle Count: " + world.Particles.Count(p => p.IsUpdating);
                 lblParticlesOnGround.Text = "Particles on Ground: " + world.ParticlesOnGroundCount;
                 lblParticleCount.Text = "Particle Count: " + world.ParticleCount;
 
@@ -167,14 +178,16 @@ namespace Falling_Elements
             particleAddingMethod.Invoke(worldLocation, radius);
         }
 
-        private void btnStone_Click(object sender, EventArgs e) =>
-            particleAddingMethod = world.AddParticle<Stone>;
+        private void btnStone_Click(object sender, EventArgs e) 
+            => particleAddingMethod = world.AddParticle<Stone>;
 
-        private void btnSand_Click(object sender, EventArgs e) =>
-            particleAddingMethod = world.AddParticle<Sand>;
+        private void btnSand_Click(object sender, EventArgs e)
+            => particleAddingMethod = world.AddParticle<Sand>;
 
-        private void btnWater_Click(object sender, EventArgs e) =>
-            particleAddingMethod = world.AddParticle<Water>;
+        private void btnWater_Click(object sender, EventArgs e) 
+            => particleAddingMethod = world.AddParticle<Water>;
+        private void btnDelete_Click(object sender, EventArgs e)
+            => particleAddingMethod = world.DeleteParticle;
 
         int radius = 1;
         private void trackBarRadius_ValueChanged(object sender, EventArgs e)
@@ -188,5 +201,7 @@ namespace Falling_Elements
         {
             Environment.Exit(0);
         }
+
+
     }
 }
