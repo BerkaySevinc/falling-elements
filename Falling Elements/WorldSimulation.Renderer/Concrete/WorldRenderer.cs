@@ -156,8 +156,14 @@ public class WorldRenderer
     {
         var renderingUpdates = new RenderingUpdates();
 
-        foreach (var particle in World.Particles)
-            renderingUpdates.Add((particle.GridX, particle.GridY), (null, particle.Color));
+        for (int j = 0; j < World.Height; j++)
+            for (int i = 0; i < World.Width; i++)
+            {
+                IParticle? particle = World.Grid[i, j];
+                if (particle is null) continue;
+
+                renderingUpdates.Add((particle.GridX, particle.GridY), (null, particle.Color));
+            }
 
         // Clears grid.
         Clear();
@@ -174,7 +180,7 @@ public class WorldRenderer
     private List<(int y, int left, int right, Color? color)> DetectLines(RenderingUpdates renderingUpdates)
     {
         // Orders cells by "y", then "x".
-        var orderedChanges = 
+        var orderedChanges =
             renderingUpdates.Updates
             .OrderBy(c => c.Key.y)
             .ThenBy(c => c.Key.x)

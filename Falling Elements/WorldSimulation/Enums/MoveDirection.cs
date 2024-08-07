@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace WorldSimulation;
 
-public interface IMovableParticle : IParticle
+public enum MoveDirection
 {
-    public float Mass { get; }
-    public Vector2 MoveDirection { get; }
+    Up = -1,
+    Down = 1
 }
+

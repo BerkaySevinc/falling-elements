@@ -3,6 +3,7 @@ using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -48,8 +49,11 @@ public abstract class Particle : IParticle
             // Returns if same.
             if (_gridY == value) return;
 
-            world.particlesByAltitude[_gridY].Remove(this);
-            world.particlesByAltitude[value].Add(this);
+            if (IsUpdating)
+            {
+                world.updatingParticlesByAltitude[_gridY].Remove(this);
+                world.updatingParticlesByAltitude[value].Add(this);
+            }
 
             _gridY = value;
         }
@@ -57,36 +61,47 @@ public abstract class Particle : IParticle
 
     public Vector2 Velocity { get; protected set; }
 
-    public bool IsUpdating { get; set; } = true;
+    private bool _isUpdating = true;
+    public bool IsUpdating
+    {
+        get => _isUpdating;
+        set
+        {
+            if (value == _isUpdating) return;
+
+            _isUpdating = value;
+
+            if (value) world.updatingParticlesByAltitude[GridY].Add(this);
+            else world.updatingParticlesByAltitude[GridY].Remove(this);
+        }
+    }
 
 
     protected World world;
-    public Particle(World world) => this.world = world;
-    public Particle(World world, float x, float y)
+    public Particle(World world, int gridX, int gridY)
     {
         this.world = world;
 
-        _gridY = (int)y;
+        _gridY = gridY;
 
-        X = x;
-        Y = y;
+        X = gridX + 0.5F;
+        Y = gridY + 0.5F;
 
         // Adds particle to grid.
         world.Grid[GridX, GridY] = this;
 
         // Add particle to list.
-        world.particlesByAltitude[GridY].Add(this);
+        world.updatingParticlesByAltitude[GridY].Add(this);
 
         UpdateParticlesAround();
     }
-    public Particle(World world, Point coordinates) : this(world, coordinates.X, coordinates.Y) { }
 
     public virtual void Dispose()
     {
         world.Grid[GridX, GridY] = null;
 
         // Remove particle from list.
-        world.particlesByAltitude[GridY].Remove(this);
+        world.updatingParticlesByAltitude[GridY].Remove(this);
 
         UpdateParticlesAround();
     }
@@ -108,7 +123,7 @@ public abstract class Particle : IParticle
         bool isOnRightBound = IsOnRightBound(gridX);
         bool isOnLeftBound = IsOnLeftBound(gridX);
 
-        if (!IsOnGround())
+        if (!IsOnGround(gridY))
         {
             var belowParticle = GetParticleByLocation(gridX, gridY + 1);
             if (belowParticle is not null) particlesAround.Add(belowParticle);
@@ -126,7 +141,7 @@ public abstract class Particle : IParticle
             }
         }
 
-        if (!IsOnCeiling())
+        if (!IsOnCeiling(gridY))
         {
             var aboveParticle = GetParticleByLocation(gridX, gridY - 1);
             if (aboveParticle is not null) particlesAround.Add(aboveParticle);
@@ -159,11 +174,14 @@ public abstract class Particle : IParticle
         return particlesAround;
     }
     protected List<IParticle> GetParticlesAround() => GetParticlesAround(GridX, GridY);
-    protected void UpdateParticlesAround()
+
+    protected void UpdateParticlesAround(int gridX, int gridY)
     {
-        foreach (var particle in GetParticlesAround())
+        foreach (var particle in GetParticlesAround(gridX, gridY))
             particle.IsUpdating = true;
     }
+    protected void UpdateParticlesAround() => UpdateParticlesAround(GridX, GridY);
+
 
 
     protected bool IsOnGround(int gridY) => gridY == world.Bottom;
@@ -187,76 +205,96 @@ public abstract class Particle : IParticle
     protected virtual bool IsParticleMovable(IParticle? particle) => particle is null;
 
 
-    protected void SwitchDirectly(int gridX, int gridY)
+    private void SwitchDirectly(int targetX, int targetY)
     {
-        if (IsSameCell(gridX, gridY)) return;
-
-        UpdateParticlesAround();
+        if (IsSameCell(targetX, targetY)) return;
 
         // Gets target particle.
-        IParticle? targetParticle = GetParticleByLocation(gridX, gridY);
+        IParticle? targetParticle = GetParticleByLocation(targetX, targetY);
 
         // Switch particles on grid.
-        world.Grid[gridX, gridY] = this;
+        world.Grid[targetX, targetY] = this;
         world.Grid[GridX, GridY] = targetParticle;
 
         if (targetParticle is not null)
         {
             // Set target particles new location.
-            targetParticle.X = GridX;
-            targetParticle.Y = GridY;
+            targetParticle.X = X;
+            targetParticle.Y = Y;
         }
 
+        UpdateParticlesAround(GridX, GridY);
+        UpdateParticlesAround(targetX, targetY);
+
         // Set new location.
-        X = gridX;
-        Y = gridY;
+        X = targetX + 0.5F;
+        Y = targetY + 0.5F;
+
     }
 
-    protected void SwitchViaPath(int targetX, int targetY, Action<int, int, IParticle?> iterationCallback, Action<int, int>? onCollisionCallback)
+    protected virtual void MoveTo(int targetX, int targetY, Action<int, int, IParticle?> iterationCallback, Action<int, int, Vector2, IParticle?>? onCollisionCallback)
     {
+        IParticle? collidedParticle = null;
+
         IterateAndApplyToTargetCell(targetX, targetY,
             (pathX, pathY) =>
             {
                 IParticle? targetParticle = GetParticleByLocation(pathX, pathY);
 
                 // Checks if target particle movable.
-                if (!IsParticleMovable(targetParticle)) return false;
+                if (!IsParticleMovable(targetParticle))
+                {
+                    collidedParticle = targetParticle;
+                    return false;
+                }
 
                 iterationCallback?.Invoke(pathX, pathY, targetParticle);
 
-                // Switch particles.
-                SwitchDirectly(pathX, pathY);
+                // Switch particles on grid.
+                world.Grid[pathX, pathY] = this;
+                world.Grid[GridX, GridY] = targetParticle;
+
+                if (targetParticle is not null)
+                {
+                    // Set target particles new location.
+                    targetParticle.X = GridX + 0.5F;
+                    targetParticle.Y = GridY + 0.5F;
+                }
+
+                UpdateParticlesAround(GridX, GridY);
+                UpdateParticlesAround(pathX, pathY);
+
+                // Set new location.
+                X = pathX + 0.5F;
+                Y = pathY + 0.5F;
 
                 return true;
             },
 
-            (pathX, pathY, collisionDirection) =>
-            {
-                onCollisionCallback?.Invoke(pathX, pathY);
-
-                // Apply collision.
-                if (collisionDirection.X is not 0)
-                {
-                    Velocity *= Vector2.UnitY;
-                    X = pathX + (collisionDirection.X > 0 ? 0.999F : -0.999F);
-                }
-                if (collisionDirection.Y is not 0)
-                {
-                    Velocity *= Vector2.UnitX;
-                    Y = pathY + (collisionDirection.Y > 0 ? 0.999F : -0.999F);
-                }
-
-                // Set IsMoving to false if Velocity is zero.
-                if (Velocity == Vector2.Zero) IsUpdating = false;
-            }
+            (gridX, gridY, collisionDirection)
+                => onCollisionCallback?.Invoke(gridX, gridY, collisionDirection, collidedParticle)
         );
     }
-    protected void SwitchViaPath(float targetX, float targetY, Action<int, int, IParticle?> iterationCallback, Action<int, int>? onCollisionCallback)
-        => SwitchViaPath((int)targetX, (int)targetY, iterationCallback, onCollisionCallback);
+    protected void MoveTo(float targetX, float targetY, Action<int, int, IParticle?> iterationCallback, Action<int, int, Vector2, IParticle?>? onCollisionCallback)
+    {
+        bool isCollided = false;
 
+        MoveTo((int)targetX, (int)targetY, iterationCallback,
+            (gridX, gridY, collisionDirection, collidedParticle) =>
+            {
+                isCollided = true;
+                onCollisionCallback?.Invoke(gridX, gridY, collisionDirection, collidedParticle);
+            });
 
+        // Make floating number digits equal.
+        if (!isCollided)
+        {
+            X = GridX + (targetX - (int)targetX);
+            Y = GridY + (targetY - (int)targetY);
+        }
+    }
 
-    private void IterateAndApplyToTargetCellInBothAxis(int targetX, int targetY, Func<int, int, bool> iterationCallback, Action<int, int, Vector2> onCollisionCallback)
+    private void IterateAndApplyToTargetCellInBothAxis(int targetX, int targetY, Func<int, int, bool> iterationCallback, Action<int, int, Vector2>? onCollisionCallback)
     {
         // Gets current location.
         int startX = GridX;
@@ -267,13 +305,13 @@ public abstract class Particle : IParticle
         int yDiff = targetY - startY;
 
         // Gets which is larger.
-        bool isXDiffIsLarger = Math.Abs(xDiff) > Math.Abs(yDiff);
+        bool isYDiffIsLarger = Math.Abs(xDiff) > Math.Abs(yDiff);
 
         // Get longer & shorter sides.
-        (int longerSide, int shorterSide) = isXDiffIsLarger ? (xDiff, yDiff) : (yDiff, xDiff);
+        (int longerSide, int shorterSide) = isYDiffIsLarger ? (xDiff, yDiff) : (yDiff, xDiff);
 
         // Calculates slope.
-        float slope = shorterSide / longerSide;
+        float slope = (float)shorterSide / longerSide;
 
 
         Vector2 collisionDirection = Vector2.Zero;
@@ -285,10 +323,10 @@ public abstract class Particle : IParticle
         for (int i = 1; i <= longerSideAbs; i++)
         {
             int longerSideIncrease = i * longerSideModifier;
-            int shorterSideIncrease = (int)Math.Round(i * slope);
+            int shorterSideIncrease = (int)Math.Round(i * slope, MidpointRounding.AwayFromZero);
 
             int newX, newY;
-            if (isXDiffIsLarger)
+            if (isYDiffIsLarger)
             {
                 newX = startX + longerSideIncrease;
                 newY = startY + shorterSideIncrease;
@@ -329,17 +367,19 @@ public abstract class Particle : IParticle
             // Invoke onCollisionCallback if collided.
             if (isCollided)
             {
+                if (onCollisionCallback is null) return;
+
                 if (!isOutOfWorld)
                 {
                     int shorterSideDirection = 0;
                     if (currentX != newX) shorterSideDirection = slope is 0 ? 0 : slope > 0 ? 1 : -1;
 
-                    collisionDirection = isXDiffIsLarger ? new Vector2(longerSideModifier, shorterSideDirection) : new Vector2(shorterSideDirection, longerSideModifier);
+                    collisionDirection = isYDiffIsLarger ? new Vector2(longerSideModifier, shorterSideDirection) : new Vector2(shorterSideDirection, longerSideModifier);
                 }
 
-                onCollisionCallback?.Invoke(currentX, currentY, collisionDirection);
+                onCollisionCallback.Invoke(currentX, currentY, collisionDirection);
 
-                break;
+                return;
             };
 
             currentX = newX;
@@ -347,7 +387,7 @@ public abstract class Particle : IParticle
         }
     }
 
-    private void IterateAndApplyToTargetCellInXAxis(int target, Func<int, bool> iterationCallback, Action<int> onCollisionCallback)
+    private void IterateAndApplyToTargetCellInXAxis(int target, Func<int, bool> iterationCallback, Action<int>? onCollisionCallback)
     {
         // Gets current location.
         int start = GridX;
@@ -375,9 +415,11 @@ public abstract class Particle : IParticle
 
         // Loop through path.
         int current = start;
-        for (int i = 1; i <= diff; i++)
+        int modifier = diff > 0 ? 1 : -1;
+        int diffAbs = Math.Abs(diff);
+        for (int i = 1; i <= diffAbs; i++)
         {
-            int newLocation = start + i;
+            int newLocation = start + i * modifier;
 
             bool isCollided = !iterationCallback.Invoke(newLocation);
             if (isCollided)
@@ -393,7 +435,7 @@ public abstract class Particle : IParticle
         if (isCollisionOccurring) onCollisionCallback?.Invoke(current);
     }
 
-    private void IterateAndApplyToTargetCellInYAxis(int target, Func<int, bool> iterationCallback, Action<int> onCollisionCallback)
+    private void IterateAndApplyToTargetCellInYAxis(int target, Func<int, bool> iterationCallback, Action<int>? onCollisionCallback)
     {
         // Gets current location.
         int start = GridY;
@@ -421,9 +463,11 @@ public abstract class Particle : IParticle
 
         // Loop through path.
         int current = start;
-        for (int i = 1; i <= diff; i++)
+        int modifier = diff > 0 ? 1 : -1;
+        int diffAbs = Math.Abs(diff);
+        for (int i = 1; i <= diffAbs; i++)
         {
-            int newLocation = start + i;
+            int newLocation = start + i * modifier;
 
             bool isCollided = !iterationCallback.Invoke(newLocation);
             if (isCollided)
@@ -441,7 +485,7 @@ public abstract class Particle : IParticle
 
 
 
-    protected void IterateAndApplyToTargetCell(int targetX, int targetY, Func<int, int, bool> iterationCallback, Action<int, int, Vector2> onCollisionCallback)
+    private void IterateAndApplyToTargetCell(int targetX, int targetY, Func<int, int, bool> iterationCallback, Action<int, int, Vector2>? onCollisionCallback)
     {
         bool isXSame = GridX == targetX;
         bool isYSame = GridY == targetY;
@@ -455,7 +499,7 @@ public abstract class Particle : IParticle
             IterateAndApplyToTargetCellInYAxis(
                 targetY,
                 path => iterationCallback.Invoke(GridX, path),
-                path => onCollisionCallback.Invoke(GridX, path, collisionDirection)
+                path => onCollisionCallback?.Invoke(GridX, path, collisionDirection)
                 );
         }
         else if (!isXSame && isYSame)
@@ -465,12 +509,10 @@ public abstract class Particle : IParticle
             IterateAndApplyToTargetCellInXAxis(
                 targetX,
                 path => iterationCallback.Invoke(path, GridY),
-                path => onCollisionCallback.Invoke(path, GridY, collisionDirection)
+                path => onCollisionCallback?.Invoke(path, GridY, collisionDirection)
                 );
         }
 
         else IterateAndApplyToTargetCellInBothAxis(targetX, targetY, iterationCallback, onCollisionCallback);
     }
-    protected void IterateAndApplyToTargetCell(float targetX, float targetY, Func<int, int, Vector2, bool, bool> callback)
-        => IterateAndApplyToTargetCell((int)targetX, (int)targetY, callback);
 }

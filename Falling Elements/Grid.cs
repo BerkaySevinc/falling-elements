@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -7,23 +8,22 @@ using WorldSimulation.Renderer;
 
 
 
+// movableparticlelarda movedirectiona göre loop olmalý, örneðin aþþa düþen parçacýklara aþþadan baþlayan loop yada tam tersi gibi, eðer direction vektörü tek yönlü deðilse örneðin -0.8, 0.5 gibi bu sefer mutlak deðerlerinin en büyük olan yön seçilir yani -0.8 ve bu yüzden soldan baþlayan loopda update edilmeli, vektörün 2 axisi de aynýysa örneðin 1, 1 bu durumda çapraz looplardamý üretmeliyim?
+// vertical hýzýn horizontala çevrilmesinde hep aynýmý olmalý biraz randommu
+
+// double buffer vs gibi renderla ilgili þeylere bak
+
+
 // particlesByAltitude public bi field öyle olmamalý o kýsýmlarý düzenle
 // fps yükselt
 // renderingi iyileþtir
 // update de threading uygulanabilirmi?
-
-// stepte direk IterateAndApplyToTargetCell kullanmak yerine, IterateAndApplyToTargetCell i kullanan direk MoveWithPath (method ismini tekrar düþün) gibi bir method oluþtur func alsýn içine (hem her bir movayabilirmi için bi func olabilir yada gerek kalmaz belki, hem de oncollisionoccured da çalýþýcak baþka bi func alabilir) o þekilde hem worldun boundlarýna çarpmayý hem particlelarla etkileþimi hesaplayan baþka bir method oluþtur onu kullan stepte
-
-
-//! PARTICLE SAYISI NORMALÝN ÜSTÜNE ÇIKIYO BAZILARI YOK OLUYO GRÝDDEN AMA LÝSTTE KALIYO (sularýn replace mekaniðiyle ilgili sanýrým) AYRICA SULAR WORLDUN ÜSTÜNE DE ÇIKABÝLÝO WORLD DOLUNCA FLN ORDAN DA SAYISI ARTIYO
-
 
 
 //! GUI & Demo
 // TODO : scale & reset settings ui
 // TODO : grid kodlarýný iyileþtir, seçilen particlý belirt arkasýna panel koyarak vs.
 // TODO : son 1 saniyede fps droplarýný gösteren bi indicatör koy ekrana
-// TODO : particllarý silme seçeneði
 
 //! MEKANÝKLER
 // TODO : kumun batmasý
@@ -58,8 +58,11 @@ namespace Falling_Elements
 
 
         const int scale = 5;
-        const int drawSpace = 60;
 
+        static int fpsFix = 60;
+        static bool isFpsFixerEnabled = false;
+
+        const int drawSpace = 60;
 
         // Creates world.
         Graphics graphics;
@@ -90,6 +93,7 @@ namespace Falling_Elements
         }
 
         private SolidBrush cleanerBrush;
+        int expectedFrameTimeoutMilliSeconds = 1000 / fpsFix;
         public FpsCounter FpsCounter = new(new(0, 0, 0, 0, 50));
         private void Render()
         {
@@ -116,13 +120,19 @@ namespace Falling_Elements
                 drawTask = Task.Run(() => renderer.RenderChanges(renderingUpdates));
 
                 // Display world info.
-                lblRenderedCellCount.Text = "Rendered Cell Count: " + renderingUpdates.Updates.Count;
-                lblMovingParticleCount.Text = "Moving Particle Count: " + world.Particles.Count(p => p.IsUpdating);
-                lblParticlesOnGround.Text = "Particles on Ground: " + world.ParticlesOnGroundCount;
                 lblParticleCount.Text = "Particle Count: " + world.ParticleCount;
+                lblUpdatingParticleCount.Text = "Updating Particle Count: " + world.UpdatingParticleCount;
+                lblFreeFallingParticleCount.Text = "Free Falling Particle Count: " + world.FreeFallingParticleCount;
+                lblRenderedCellCount.Text = "Rendered Cell Count: " + renderingUpdates.Updates.Count;
 
-                FpsCounter.StopFrame();
-                FpsCounter.StartFrame();
+                var elapsed = FpsCounter.RestartFrame();
+
+                // FPS fixer
+                if (isFpsFixerEnabled && elapsed.Milliseconds < expectedFrameTimeoutMilliSeconds)
+                {
+                    int timeout = expectedFrameTimeoutMilliSeconds - elapsed.Milliseconds;
+                    Thread.Sleep(timeout);
+                }
 
                 Application.DoEvents();
             }
@@ -178,13 +188,13 @@ namespace Falling_Elements
             particleAddingMethod.Invoke(worldLocation, radius);
         }
 
-        private void btnStone_Click(object sender, EventArgs e) 
+        private void btnStone_Click(object sender, EventArgs e)
             => particleAddingMethod = world.AddParticle<Stone>;
 
         private void btnSand_Click(object sender, EventArgs e)
             => particleAddingMethod = world.AddParticle<Sand>;
 
-        private void btnWater_Click(object sender, EventArgs e) 
+        private void btnWater_Click(object sender, EventArgs e)
             => particleAddingMethod = world.AddParticle<Water>;
         private void btnDelete_Click(object sender, EventArgs e)
             => particleAddingMethod = world.DeleteParticle;

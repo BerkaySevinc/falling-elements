@@ -32,7 +32,11 @@ public class RenderingUpdates
             // Remove if not changed.
             if (value.newColor == existingValue.oldColor) Updates.Remove(key);
             // Set new color if changed.
-            else existingValue.newColor = value.newColor;
+            else
+            {
+                existingValue.newColor = value.newColor;
+                Updates[key] = existingValue;
+            }
         }
     }
 

@@ -29,16 +29,16 @@
         private void InitializeComponent()
         {
             lblParticleCount = new Label();
-            lblParticlesOnGround = new Label();
             btnStone = new Panel();
             btnSand = new Panel();
             btnWater = new Panel();
             trackBarRadius = new TrackBar();
             lblRadius = new Label();
             lblRenderedCellCount = new Label();
-            lblMovingParticleCount = new Label();
+            lblUpdatingParticleCount = new Label();
             panel1 = new Panel();
             btnDelete = new Panel();
+            lblFreeFallingParticleCount = new Label();
             ((System.ComponentModel.ISupportInitialize)trackBarRadius).BeginInit();
             panel1.SuspendLayout();
             SuspendLayout();
@@ -48,23 +48,11 @@
             lblParticleCount.AutoSize = true;
             lblParticleCount.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
             lblParticleCount.ForeColor = SystemColors.ButtonHighlight;
-            lblParticleCount.Location = new Point(1126, 16);
+            lblParticleCount.Location = new Point(657, 16);
             lblParticleCount.Name = "lblParticleCount";
             lblParticleCount.Size = new Size(113, 21);
             lblParticleCount.TabIndex = 0;
             lblParticleCount.Text = "Particle Count: ";
-            // 
-            // lblParticlesOnGround
-            // 
-            lblParticlesOnGround.AutoSize = true;
-            lblParticlesOnGround.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
-            lblParticlesOnGround.ForeColor = SystemColors.ButtonHighlight;
-            lblParticlesOnGround.Location = new Point(1229, 16);
-            lblParticlesOnGround.Name = "lblParticlesOnGround";
-            lblParticlesOnGround.Size = new Size(153, 21);
-            lblParticlesOnGround.TabIndex = 1;
-            lblParticlesOnGround.Text = "Particles on Ground: ";
-            lblParticlesOnGround.Visible = false;
             // 
             // btnStone
             // 
@@ -122,22 +110,22 @@
             lblRenderedCellCount.AutoSize = true;
             lblRenderedCellCount.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
             lblRenderedCellCount.ForeColor = SystemColors.ButtonHighlight;
-            lblRenderedCellCount.Location = new Point(657, 16);
+            lblRenderedCellCount.Location = new Point(1455, 16);
             lblRenderedCellCount.Name = "lblRenderedCellCount";
-            lblRenderedCellCount.Size = new Size(155, 21);
+            lblRenderedCellCount.Size = new Size(160, 21);
             lblRenderedCellCount.TabIndex = 7;
-            lblRenderedCellCount.Text = "Changed Cell Count: ";
+            lblRenderedCellCount.Text = "Rendered Cell Count: ";
             // 
-            // lblMovingParticleCount
+            // lblUpdatingParticleCount
             // 
-            lblMovingParticleCount.AutoSize = true;
-            lblMovingParticleCount.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
-            lblMovingParticleCount.ForeColor = SystemColors.ButtonHighlight;
-            lblMovingParticleCount.Location = new Point(881, 16);
-            lblMovingParticleCount.Name = "lblMovingParticleCount";
-            lblMovingParticleCount.Size = new Size(170, 21);
-            lblMovingParticleCount.TabIndex = 8;
-            lblMovingParticleCount.Text = "Moving Particle Count: ";
+            lblUpdatingParticleCount.AutoSize = true;
+            lblUpdatingParticleCount.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
+            lblUpdatingParticleCount.ForeColor = SystemColors.ButtonHighlight;
+            lblUpdatingParticleCount.Location = new Point(881, 16);
+            lblUpdatingParticleCount.Name = "lblUpdatingParticleCount";
+            lblUpdatingParticleCount.Size = new Size(181, 21);
+            lblUpdatingParticleCount.TabIndex = 8;
+            lblUpdatingParticleCount.Text = "Updating Particle Count: ";
             // 
             // panel1
             // 
@@ -159,21 +147,32 @@
             btnDelete.TabIndex = 10;
             btnDelete.Click += btnDelete_Click;
             // 
+            // lblFreeFallingParticleCount
+            // 
+            lblFreeFallingParticleCount.AutoSize = true;
+            lblFreeFallingParticleCount.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
+            lblFreeFallingParticleCount.ForeColor = SystemColors.ButtonHighlight;
+            lblFreeFallingParticleCount.Location = new Point(1165, 16);
+            lblFreeFallingParticleCount.Name = "lblFreeFallingParticleCount";
+            lblFreeFallingParticleCount.Size = new Size(196, 21);
+            lblFreeFallingParticleCount.TabIndex = 10;
+            lblFreeFallingParticleCount.Text = "Free Falling Particle Count: ";
+            // 
             // Grid
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(10, 12, 13);
-            ClientSize = new Size(1515, 450);
+            ClientSize = new Size(1817, 450);
+            Controls.Add(lblFreeFallingParticleCount);
             Controls.Add(panel1);
-            Controls.Add(lblMovingParticleCount);
+            Controls.Add(lblUpdatingParticleCount);
             Controls.Add(lblRenderedCellCount);
             Controls.Add(lblRadius);
             Controls.Add(trackBarRadius);
             Controls.Add(btnWater);
             Controls.Add(btnSand);
             Controls.Add(btnStone);
-            Controls.Add(lblParticlesOnGround);
             Controls.Add(lblParticleCount);
             Name = "Grid";
             StartPosition = FormStartPosition.CenterScreen;
@@ -190,15 +189,15 @@
         #endregion
 
         private Label lblParticleCount;
-        private Label lblParticlesOnGround;
         private Panel btnStone;
         private Panel btnSand;
         private Panel btnWater;
         private TrackBar trackBarRadius;
         private Label lblRadius;
         private Label lblRenderedCellCount;
-        private Label lblMovingParticleCount;
+        private Label lblUpdatingParticleCount;
         private Panel panel1;
         private Panel btnDelete;
+        private Label lblFreeFallingParticleCount;
     }
 }

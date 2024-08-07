@@ -28,11 +28,11 @@ public class World
 
     public IParticle?[,] Grid { get; }
 
-    public float Gravity { get; set; } = 10;
+    public float Gravity { get; init; } = 10;
 
-    public IEnumerable<IParticle> Particles => particlesByAltitude.SelectMany(l => l);
-    public int ParticlesOnGroundCount => particlesByAltitude[Bottom].Count;
-    public int ParticleCount => particlesByAltitude.Sum(l => l.Count);
+    public int ParticleCount { get; private set; }
+    public int UpdatingParticleCount => updatingParticlesByAltitude.Sum(l => l.Count);
+    public int FreeFallingParticleCount => updatingParticlesByAltitude.Sum(l => l.Count(p => p is MovableParticle movableParticle && movableParticle.IsFreeFalling));
 
 
 
@@ -44,10 +44,10 @@ public class World
         Grid = new IParticle?[Width, Height];
 
         // Creates particles by altitude list.
-        particlesByAltitude = new List<IParticle>[height];
+        updatingParticlesByAltitude = new List<IParticle>[height];
 
         for (int i = 0; i < Height; i++)
-            particlesByAltitude[i] = new List<IParticle>();
+            updatingParticlesByAltitude[i] = new List<IParticle>();
     }
     public World(Size size) : this(size.Width, size.Height) { }
     public World(int size) : this(size, size) { }
@@ -116,7 +116,7 @@ public class World
     }
 
     Stopwatch deltaTimer = new();
-    public List<IParticle>[] particlesByAltitude;
+    public List<IParticle>[] updatingParticlesByAltitude;
     public RenderingUpdates Update()
     {
         // Calculates delta time.
@@ -128,16 +128,13 @@ public class World
         // Loops through all altitudes.
         for (int floorY = Bottom; floorY >= 0; floorY--)
         {
-            var altitudeParticleList = particlesByAltitude[floorY];
+            var altitudeParticleList = updatingParticlesByAltitude[floorY].ToList();
 
             // Loops through all particles at the altitude.
             for (int i = altitudeParticleList.Count - 1; i >= 0; i--)
             {
                 // Gets particle.
                 var particle = altitudeParticleList[i];
-
-                // Continue if particle cant move.
-                if (!particle.IsUpdating) continue;
 
                 // Step particle.
                 var changes = particle.Step(deltaTime);
@@ -164,6 +161,8 @@ public class World
                     // Creates new particle.
                     IParticle particle = (IParticle)Activator.CreateInstance(type, this, gridX, gridY)!;
 
+                    ParticleCount++;
+
                     // Adds particle to grid changes.
                     renderingUpdates.Add((gridX, gridY), (null, particle.Color));
                 }
@@ -181,10 +180,12 @@ public class World
 
                     if (existingParticle is null) continue;
 
+                    existingParticle?.Dispose();
+
+                    ParticleCount--;
+
                     // Adds particle to grid changes.
                     renderingUpdates.Add((gridX, gridY), (existingParticle.Color, null));
-
-                    existingParticle?.Dispose();
                 }
 
                 particlesToDelete.Clear();

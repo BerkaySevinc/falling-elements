@@ -9,9 +9,10 @@ namespace WorldSimulation;
 public class Water : Liquid
 {
     public override Color Color { get; } = Color.DeepSkyBlue;
-    public override float Mass { get; } = 30;
 
-    public Water(World world) : base(world) { }
-    public Water(World world, float x, float y) : base(world, x, y) { }
-    public Water(World world, Point coordinates) : base(world, coordinates) { }
+    public override float Mass { get; } = 30;
+    public override float CoefficientOfFriction { get; } = 1;
+
+
+    public Water(World world, int gridX, int gridY) : base(world, gridX, gridY) { }
 }

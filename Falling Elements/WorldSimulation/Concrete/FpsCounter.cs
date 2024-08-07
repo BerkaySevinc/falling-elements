@@ -93,12 +93,13 @@ public class FpsCounter :
     /// <summary>
     /// Stop frame measurement.
     /// </summary>
-    public void StopFrame()
+    public TimeSpan StopFrame()
     {
         StopwatchFrame.Stop();
 
         // add elapsed time of this frame
-        Elapsed += StopwatchFrame.Elapsed;
+        var elapsed = StopwatchFrame.Elapsed;
+        Elapsed += elapsed;
 
         // increment frame count to respectively keep ratio
         FrameCount++;
@@ -116,6 +117,16 @@ public class FpsCounter :
             Elapsed = TimeSpan.Zero;
             FrameCount = 0;
         }
+
+        return elapsed;
+    }
+
+    public TimeSpan RestartFrame()
+    {
+        var elapsed = StopFrame();
+        StartFrame();
+
+        return elapsed;
     }
 
     #endregion
