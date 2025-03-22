@@ -8,6 +8,8 @@ using WorldSimulation.Renderer;
 
 
 
+// should i add "Base" to abstract classes
+
 // movableparticlelarda movedirectiona göre loop olmalý, örneðin aþþa düþen parçacýklara aþþadan baþlayan loop yada tam tersi gibi, eðer direction vektörü tek yönlü deðilse örneðin -0.8, 0.5 gibi bu sefer mutlak deðerlerinin en büyük olan yön seçilir yani -0.8 ve bu yüzden soldan baþlayan loopda update edilmeli, vektörün 2 axisi de aynýysa örneðin 1, 1 bu durumda çapraz looplardamý üretmeliyim?
 // vertical hýzýn horizontala çevrilmesinde hep aynýmý olmalý biraz randommu
 
@@ -193,6 +195,9 @@ namespace Falling_Elements
 
         private void btnSand_Click(object sender, EventArgs e)
             => particleAddingMethod = world.AddParticle<Sand>;
+
+        private void btnDirt_Click(object sender, EventArgs e)
+            => particleAddingMethod = world.AddParticle<Dirt>;
 
         private void btnWater_Click(object sender, EventArgs e)
             => particleAddingMethod = world.AddParticle<Water>;

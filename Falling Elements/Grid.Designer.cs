@@ -39,6 +39,7 @@
             panel1 = new Panel();
             btnDelete = new Panel();
             lblFreeFallingParticleCount = new Label();
+            btnDirt = new Panel();
             ((System.ComponentModel.ISupportInitialize)trackBarRadius).BeginInit();
             panel1.SuspendLayout();
             SuspendLayout();
@@ -58,7 +59,7 @@
             // 
             btnStone.BackColor = Color.Silver;
             btnStone.Cursor = Cursors.Hand;
-            btnStone.Location = new Point(202, 10);
+            btnStone.Location = new Point(132, 10);
             btnStone.Name = "btnStone";
             btnStone.Size = new Size(32, 32);
             btnStone.TabIndex = 2;
@@ -68,7 +69,7 @@
             // 
             btnSand.BackColor = Color.SandyBrown;
             btnSand.Cursor = Cursors.Hand;
-            btnSand.Location = new Point(252, 10);
+            btnSand.Location = new Point(182, 10);
             btnSand.Name = "btnSand";
             btnSand.Size = new Size(32, 32);
             btnSand.TabIndex = 3;
@@ -78,7 +79,7 @@
             // 
             btnWater.BackColor = Color.DeepSkyBlue;
             btnWater.Cursor = Cursors.Hand;
-            btnWater.Location = new Point(303, 10);
+            btnWater.Location = new Point(280, 10);
             btnWater.Name = "btnWater";
             btnWater.Size = new Size(32, 32);
             btnWater.TabIndex = 3;
@@ -132,7 +133,7 @@
             panel1.BackColor = Color.Silver;
             panel1.Controls.Add(btnDelete);
             panel1.Cursor = Cursors.Hand;
-            panel1.Location = new Point(353, 9);
+            panel1.Location = new Point(330, 9);
             panel1.Name = "panel1";
             panel1.Size = new Size(34, 34);
             panel1.TabIndex = 9;
@@ -158,12 +159,23 @@
             lblFreeFallingParticleCount.TabIndex = 10;
             lblFreeFallingParticleCount.Text = "Free Falling Particle Count: ";
             // 
+            // btnDirt
+            // 
+            btnDirt.BackColor = Color.SaddleBrown;
+            btnDirt.Cursor = Cursors.Hand;
+            btnDirt.Location = new Point(231, 10);
+            btnDirt.Name = "btnDirt";
+            btnDirt.Size = new Size(32, 32);
+            btnDirt.TabIndex = 4;
+            btnDirt.Click += btnDirt_Click;
+            // 
             // Grid
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(10, 12, 13);
             ClientSize = new Size(1817, 450);
+            Controls.Add(btnDirt);
             Controls.Add(lblFreeFallingParticleCount);
             Controls.Add(panel1);
             Controls.Add(lblUpdatingParticleCount);
@@ -199,5 +211,6 @@
         private Panel panel1;
         private Panel btnDelete;
         private Label lblFreeFallingParticleCount;
+        private Panel btnDirt;
     }
 }

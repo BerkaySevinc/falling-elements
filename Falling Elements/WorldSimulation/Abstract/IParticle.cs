@@ -17,7 +17,6 @@ public interface IParticle : IDisposable
     public int GridX { get;  }
     public int GridY { get; }
 
-    public Vector2 Velocity { get; }
     public bool IsUpdating { get; set; }
 
 

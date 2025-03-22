@@ -11,8 +11,7 @@ public class Water : Liquid
     public override Color Color { get; } = Color.DeepSkyBlue;
 
     public override float Mass { get; } = 30;
-    public override float CoefficientOfFriction { get; } = 1;
-
+    public override float CoefficientOfFriction { get; } = 0.02F;
 
     public Water(World world, int gridX, int gridY) : base(world, gridX, gridY) { }
 }

@@ -6,10 +6,7 @@ using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using static System.Windows.Forms.AxHost;
+
 
 namespace WorldSimulation;
 
@@ -59,7 +56,6 @@ public abstract class Particle : IParticle
         }
     }
 
-    public Vector2 Velocity { get; protected set; }
 
     private bool _isUpdating = true;
     public bool IsUpdating
@@ -110,12 +106,6 @@ public abstract class Particle : IParticle
 
 
     protected IParticle? GetParticleByLocation(int gridX, int gridY) => world.Grid[gridX, gridY];
-    protected IParticle? GetAboveParticle()
-    {
-        if (GridY == 0) return null;
-
-        return GetParticleByLocation(GridX, GridY - 1);
-    }
     protected List<IParticle> GetParticlesAround(int gridX, int gridY)
     {
         var particlesAround = new List<IParticle>();
