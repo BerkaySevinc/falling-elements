@@ -21,9 +21,9 @@ public class World
     public int Width { get; }
     public int Height { get; }
 
-    public int Left { get; } = 0;
+    public int Left { get; }
     public int Right { get; }
-    public int Top { get; } = 0;
+    public int Top { get; }
     public int Bottom { get; }
 
     public IParticle?[,] Grid { get; }
@@ -180,12 +180,12 @@ public class World
 
                     if (existingParticle is null) continue;
 
-                    existingParticle?.Dispose();
-
                     ParticleCount--;
 
                     // Adds particle to grid changes.
-                    renderingUpdates.Add((gridX, gridY), (existingParticle.Color, null));
+                    renderingUpdates.Add((gridX, gridY), (existingParticle?.Color, null));
+
+                    existingParticle?.Dispose();
                 }
 
                 particlesToDelete.Clear();

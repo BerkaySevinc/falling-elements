@@ -8,11 +8,7 @@ using System.Threading.Tasks;
 namespace WorldSimulation;
 
 
-public interface IMovableParticle : IParticle
+public interface IMovableSolid : IParticle, ISolid
 {
-    public float Mass { get; }
-
-    public MoveDirection MoveDirection { get; }
-
-    public Vector2 Velocity { get; set; }
+    public float CoefficientOfFriction { get; }
 }

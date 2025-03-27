@@ -10,37 +10,19 @@ namespace WorldSimulation;
 public abstract class MovableParticle : Particle, IMovableParticle
 {
     public abstract float Mass { get; }
-    public abstract float CoefficientOfFriction { get; }
 
     public abstract MoveDirection MoveDirection { get; }
 
     public Vector2 Velocity { get; set; }
 
-    public bool IsFreeFalling { get; private set; }
+    public bool IsFreeFalling { get; protected set; }
 
-    //public bool IsMoving => throw new NotImplementedException();
+    protected Vector2 MoveForceVector { get; }
 
-    //public bool IsCollidingBottom => throw new NotImplementedException();
-    //public bool IsCollidingTop => throw new NotImplementedException();
-    //public bool IsCollidingRight => throw new NotImplementedException();
-    //public bool IsCollidingLeft => throw new NotImplementedException();
-
-    //public bool IsBelowStatic { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-    //public bool IsAboveStatic { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-    //public bool IsRightStatic { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-    //public bool IsLeftStatic { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-    //public bool IsMoveDirectionStatic => throw new NotImplementedException();
-
-
-    private float frictionForce;
-    private Vector2 moveForceVector;
     protected MovableParticle(World world, int gridX, int gridY) : base(world, gridX, gridY)
     {
         Vector2 moveDirectionVector = MoveDirection is MoveDirection.Down ? Vector2.UnitY : -Vector2.UnitY;
-        moveForceVector = moveDirectionVector * Mass * world.Gravity;
-
-        frictionForce = CoefficientOfFriction * Math.Abs(moveForceVector.Y);
+        MoveForceVector = moveDirectionVector * Mass * world.Gravity;
     }
 
 
@@ -51,9 +33,7 @@ public abstract class MovableParticle : Particle, IMovableParticle
 
            (pathX, pathY, collisionDirection, collidedParticle) =>
            {
-               onCollisionCallback?.Invoke(pathX, pathY, collisionDirection, collidedParticle);
-
-               // Apply collision.
+               // If collision horizontal
                if (collisionDirection.X is not 0)
                {
                    X = collisionDirection.X > 0 ? pathX + 0.999F : pathX;
@@ -61,10 +41,12 @@ public abstract class MovableParticle : Particle, IMovableParticle
                    // Reset horizontal velocity.
                    Velocity *= Vector2.UnitY;
                }
-               if (collisionDirection.Y is not 0)
+
+               // If collision vertical
+               else
                {
                    Y = collisionDirection.Y > 0 ? pathY + 0.999F : pathY;
-                   
+
                    // Return if collided to falling particle.
                    if (collidedParticle is MovableParticle movableParticle && movableParticle.IsFreeFalling)
                    {
@@ -72,61 +54,29 @@ public abstract class MovableParticle : Particle, IMovableParticle
                        return;
                    }
 
-                   // Convert it to horizontal velocity.
-                   float horizontalVelocity = Velocity.Y / frictionForce;
-
-                   // Set velocity direction to left if particle already has left velocity.
-                   // Or set direction randomly if horizontal velocity is zero.
-                   if (Velocity.X < 0 || (Velocity.X is 0 && random.Next(2) is 0)) 
-                       horizontalVelocity *= -1;
-
-                   Velocity += new Vector2(horizontalVelocity, 0);
-
-                   // Reset vertical velocity.
                    Velocity *= Vector2.UnitX;
 
-                   // Set IsFreeFalling to false if horizontal velocity is zero.
+                   // Set IsFreeFalling to false.
                    IsFreeFalling = false;
                }
 
-               // Set IsUpdating to false if velocity is zero.
-               if (Velocity == Vector2.Zero) IsUpdating = false;
+               onCollisionCallback?.Invoke(pathX, pathY, collisionDirection, collidedParticle);
            }
        );
     }
 
-    protected (float targetX, float targetY) ApplyGravity(float deltaTime)
+    protected virtual (float targetX, float targetY) ApplyGravity(float deltaTime)
     {
         // Set is free falling.
         IsFreeFalling = IsMoveDirectionAvailable();
 
-        // Apply gravity force if move direction is available.
         Vector2 halfGravityForceVector = Vector2.Zero;
-        Vector2 halfFrictionForceVector = Vector2.Zero;
         if (IsFreeFalling)
         {
-            halfGravityForceVector = moveForceVector * deltaTime / 2;
+            // Apply gravity force if move direction is available.
+            halfGravityForceVector = MoveForceVector * deltaTime / 2;
 
             Velocity += halfGravityForceVector;
-        }
-        // Apply friction force if move direction is not available and particle has horizontal velocity.
-        else if (Velocity.X is not 0)
-        {
-            float halfFrictionForce = frictionForce * deltaTime / 2;
-
-            // Reset horizontal velocity if friction force is bigger than velocity.
-            if (Math.Abs(Velocity.X) < halfFrictionForce)
-            {
-                Velocity *= Vector2.UnitY;
-            }
-            // Apply friction force if friction force is smaller than velocity.
-            else
-            {
-                if (Velocity.X > 0) halfFrictionForce *= -1;
-
-                halfFrictionForceVector = new Vector2(halfFrictionForce, 0);
-                Velocity += halfFrictionForceVector;
-            }
         }
 
         // Get target location using velocity.
@@ -134,32 +84,18 @@ public abstract class MovableParticle : Particle, IMovableParticle
         float targetY = Y + Velocity.Y * deltaTime;
 
         // Apply other half gravity force if move direction is available.
-        if (IsFreeFalling)
-        {
-            Velocity += halfGravityForceVector;
-        }
-        // Apply other half friction force if move direction is not available and particle has x axis velocity.
-        else if (Velocity.X is not 0)
-        {
-            // Reset horizontal velocity if friction force is bigger than velocity.
-            if (Math.Abs(Velocity.X) < Math.Abs(halfFrictionForceVector.X))
-            {
-                Velocity *= Vector2.UnitY;
-            }
-
-            // Apply friction force if friction force is smaller than velocity.
-            else Velocity += halfFrictionForceVector;
-        }
+        if (IsFreeFalling) Velocity += halfGravityForceVector;
 
         return (targetX, targetY);
     }
 
 
-    private bool IsMoveDirectionAvailable()
+    protected bool IsMoveDirectionAvailable()
     {
         if (MoveDirection is MoveDirection.Down)
         {
-            if (Y - GridY < 0.99) return true;
+            if (Y - GridY < 0.99)
+                return true;
 
             if (GridY == world.Bottom) return false;
         }
