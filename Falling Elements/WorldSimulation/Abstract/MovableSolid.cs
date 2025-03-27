@@ -72,30 +72,8 @@ public abstract class MovableSolid : MovableParticle, IMovableSolid
             }
         }
 
-        // If staying at the same cell update coordinates and return.
-        if (IsSameCell(targetX, targetY))
-        {
-            X = targetX;
-            Y = targetY;
-
-            return null;
-        }
-
-        // Create grid changes to save changes.
-        var renderingUpdates = new RenderingUpdates();
-
-        // Itarete to target location.
-        MoveTo(targetX, targetY,
-
-            (pathX, pathY, particle) =>
-            {
-                // Save grid changes.
-                renderingUpdates.Add((GridX, GridY), (Color, particle?.Color));
-                renderingUpdates.Add((pathX, pathY), (particle?.Color, Color));
-            },
-
-            null
-        );
+        // Move to target location.
+        RenderingUpdates? renderingUpdates = MoveTo(targetX, targetY, null, null);
 
         // Return changes.
         return renderingUpdates;
@@ -104,10 +82,11 @@ public abstract class MovableSolid : MovableParticle, IMovableSolid
     protected override bool IsParticleMovable(IParticle? particle)
         => particle is not ISolid;
 
-    protected override void MoveTo(int targetX, int targetY, Action<int, int, IParticle?> iterationCallback, Action<int, int, Vector2, IParticle?>? onCollisionCallback)
+    protected override RenderingUpdates MoveTo(int targetX, int targetY, Action<int, int, IParticle?>? iterationCallback, Action<int, int, Vector2, IParticle?>? onCollisionCallback)
     {
         Vector2 initialVelocity = Velocity;
-        base.MoveTo(targetX, targetY, iterationCallback,
+
+        return base.MoveTo(targetX, targetY, iterationCallback,
 
            (pathX, pathY, collisionDirection, collidedParticle) =>
            {

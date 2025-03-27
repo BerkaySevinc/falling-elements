@@ -8,7 +8,8 @@ namespace WorldSimulation;
 
 public class Sand : MovableSolid
 {
-    public override Color Color { get; } = Color.SandyBrown;
+    public override Color Color { get; protected set; } = Color.FromArgb(255, 230, 85);
+    protected override float ColorShiftFactor { get; } = 0.15F;
 
     public override float Mass { get; } = 40;
     public override float CoefficientOfFriction { get; } = 0.05F;

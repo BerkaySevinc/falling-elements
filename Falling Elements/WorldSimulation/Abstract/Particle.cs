@@ -13,7 +13,10 @@ namespace WorldSimulation;
 
 public abstract class Particle : IParticle
 {
-    public abstract Color Color { get; }
+    public abstract Color Color { get; protected set; }
+    protected virtual float ColorShiftFactor { get; } = 0.3F;
+    protected virtual int ColorVariationCount { get; } = 20;
+
 
     private float _x;
     public float X
@@ -74,8 +77,15 @@ public abstract class Particle : IParticle
 
 
     protected World world;
+    private Random random = new();
     public Particle(World world, int gridX, int gridY)
     {
+        if (ColorVariationCount is not 0)
+        {
+            float randomColorFactor = ColorShiftFactor - (random.Next(ColorVariationCount + 1) * (ColorShiftFactor / ColorVariationCount * 2));
+            Color = ChangeColorBrightness(Color, randomColorFactor);
+        }
+
         this.world = world;
 
         _gridY = gridY;
@@ -222,9 +232,10 @@ public abstract class Particle : IParticle
 
     }
 
-    protected virtual void MoveTo(int targetX, int targetY, Action<int, int, IParticle?> iterationCallback, Action<int, int, Vector2, IParticle?>? onCollisionCallback)
+    protected virtual RenderingUpdates MoveTo(int targetX, int targetY, Action<int, int, IParticle?>? iterationCallback, Action<int, int, Vector2, IParticle?>? onCollisionCallback)
     {
         IParticle? collidedParticle = null;
+        RenderingUpdates renderingUpdates = new RenderingUpdates();
 
         IterateAndApplyToTargetCell(targetX, targetY,
             (pathX, pathY) =>
@@ -238,7 +249,9 @@ public abstract class Particle : IParticle
                     return false;
                 }
 
-                iterationCallback?.Invoke(pathX, pathY, targetParticle);
+                // Save grid changes.
+                renderingUpdates.Add((GridX, GridY), (Color, targetParticle?.Color));
+                renderingUpdates.Add((pathX, pathY), (targetParticle?.Color, Color));
 
                 // Switch particles on grid.
                 world.Grid[pathX, pathY] = this;
@@ -258,18 +271,31 @@ public abstract class Particle : IParticle
                 X = pathX + 0.5F;
                 Y = pathY + 0.5F;
 
+                iterationCallback?.Invoke(pathX, pathY, targetParticle);
+
                 return true;
             },
 
             (gridX, gridY, collisionDirection)
                 => onCollisionCallback?.Invoke(gridX, gridY, collisionDirection, collidedParticle)
         );
+
+        return renderingUpdates;
     }
-    protected void MoveTo(float targetX, float targetY, Action<int, int, IParticle?> iterationCallback, Action<int, int, Vector2, IParticle?>? onCollisionCallback)
+    protected RenderingUpdates? MoveTo(float targetX, float targetY, Action<int, int, IParticle?>? iterationCallback, Action<int, int, Vector2, IParticle?>? onCollisionCallback)
     {
+        // If staying at the same cell update coordinates and return.
+        if (IsSameCell(targetX, targetY))
+        {
+            X = targetX;
+            Y = targetY;
+
+            return null;
+        }
+
         bool isCollided = false;
 
-        MoveTo((int)targetX, (int)targetY, iterationCallback,
+        RenderingUpdates renderingUpdates = MoveTo((int)targetX, (int)targetY, iterationCallback,
             (gridX, gridY, collisionDirection, collidedParticle) =>
             {
                 isCollided = true;
@@ -282,6 +308,8 @@ public abstract class Particle : IParticle
             X = GridX + (targetX - (int)targetX);
             Y = GridY + (targetY - (int)targetY);
         }
+
+        return renderingUpdates;
     }
 
     private void IterateAndApplyToTargetCellInBothAxis(int targetX, int targetY, Func<int, int, bool> iterationCallback, Action<int, int, Vector2>? onCollisionCallback)
@@ -504,5 +532,28 @@ public abstract class Particle : IParticle
         }
 
         else IterateAndApplyToTargetCellInBothAxis(targetX, targetY, iterationCallback, onCollisionCallback);
+    }
+
+    private static Color ChangeColorBrightness(Color color, float correctionFactor)
+    {
+        float red = color.R;
+        float green = color.G;
+        float blue = color.B;
+
+        if (correctionFactor < 0)
+        {
+            correctionFactor++;
+            red *= correctionFactor;
+            green *= correctionFactor;
+            blue *= correctionFactor;
+        }
+        else
+        {
+            red = (255 - red) * correctionFactor + red;
+            green = (255 - green) * correctionFactor + green;
+            blue = (255 - blue) * correctionFactor + blue;
+        }
+
+        return Color.FromArgb(color.A, (int)red, (int)green, (int)blue);
     }
 }

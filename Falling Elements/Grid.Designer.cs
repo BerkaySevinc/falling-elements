@@ -57,7 +57,7 @@
             // 
             // btnStone
             // 
-            btnStone.BackColor = Color.Silver;
+            btnStone.BackColor = Color.LightGray;
             btnStone.Cursor = Cursors.Hand;
             btnStone.Location = new Point(132, 10);
             btnStone.Name = "btnStone";
@@ -67,7 +67,7 @@
             // 
             // btnSand
             // 
-            btnSand.BackColor = Color.SandyBrown;
+            btnSand.BackColor = Color.FromArgb(255, 230, 85);
             btnSand.Cursor = Cursors.Hand;
             btnSand.Location = new Point(182, 10);
             btnSand.Name = "btnSand";
@@ -77,7 +77,7 @@
             // 
             // btnWater
             // 
-            btnWater.BackColor = Color.DeepSkyBlue;
+            btnWater.BackColor = Color.FromArgb(50, 205, 255);
             btnWater.Cursor = Cursors.Hand;
             btnWater.Location = new Point(280, 10);
             btnWater.Name = "btnWater";

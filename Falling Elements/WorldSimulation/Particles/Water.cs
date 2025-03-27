@@ -8,7 +8,8 @@ namespace WorldSimulation;
 
 public class Water : Liquid
 {
-    public override Color Color { get; } = Color.DeepSkyBlue;
+    public override Color Color { get; protected set; } = Color.FromArgb(50, 205, 255);
+    protected override float ColorShiftFactor { get; } = 0.05F;
 
     public override float Mass { get; } = 30;
 

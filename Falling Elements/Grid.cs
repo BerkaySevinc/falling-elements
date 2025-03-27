@@ -11,7 +11,6 @@ using WorldSimulation.Renderer;
 // should i add "Base" to abstract classes
 
 // movableparticlelarda movedirectiona göre loop olmalý, örneðin aþþa düþen parçacýklara aþþadan baþlayan loop yada tam tersi gibi, eðer direction vektörü tek yönlü deðilse örneðin -0.8, 0.5 gibi bu sefer mutlak deðerlerinin en büyük olan yön seçilir yani -0.8 ve bu yüzden soldan baþlayan loopda update edilmeli, vektörün 2 axisi de aynýysa örneðin 1, 1 bu durumda çapraz looplardamý üretmeliyim?
-// vertical hýzýn horizontala çevrilmesinde hep aynýmý olmalý biraz randommu
 
 // double buffer vs gibi renderla ilgili þeylere bak
 
@@ -28,10 +27,6 @@ using WorldSimulation.Renderer;
 // TODO : son 1 saniyede fps droplarýný gösteren bi indicatör koy ekrana
 
 //! MEKANÝKLER
-// TODO : kumun batmasý
-// TODO : water hýzýný arttýr tek seferde 5 blok vs. gidebilsin, algoritma çoðu þeyi y'ye göre hesaplýyo
-// TODO : vectör ile velocity fln koy hep ayný hýzda düþüyo particlelar
-// TODO : havada yeri deðiþen particle sorununu çöz
 // çaprazdan replace edince çapraza deil üste çýkmalý
 // aþþadan replace edincede yukarýsý yerine nullda yanlara çýkmasý daha mantýklý gibi
 
@@ -39,11 +34,6 @@ using WorldSimulation.Renderer;
 // UNDONE : DRAWÝNG OPTÝMÝZASYONU OLARAK SADECE LÝNE OLARAK EN BÜYÜÐÜ ALIYO, ONUN YERÝNE EN BÜYÜK DÖRTGENÝ SEÇMELÝ VE ÇÝZMELÝ
 // TODO : çok emin deðilim ama update kýsmýnda optimizasyon olarak tüm particlelarý deðilde, sadece movingleri looplamanýn bi yolu varmý?
 // TODO : multithreading ekle
-// TODO : isStopping/Stopped gibi biþey eklenebilir, altýndaki duruyosa o da duruyo olur, hareket etmeye baþlayýnca üstteki particleýn da isstopping ini false yapar, (böylece sadece hareket edenlere loop atabiliriz)
-
-//! DÝÐER
-// TODO : herhangi bi altitude daki listteki elemanlarý rasgele almak daha mý iyi, daha iyisi önce dikey olarak inenleri ayýrýp hareket ettirmek sonra diagonaller
-// TODO : Update deðiþim eþiði gibi biþey olmalý, çünkü scale büyük olduðunda, bir pixel 0.5 ilerlediðinde gridchanges e girmio bu yüzden ekranda smooth ilerleyemio
 
 
 

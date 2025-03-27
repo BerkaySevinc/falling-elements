@@ -27,9 +27,9 @@ public abstract class MovableParticle : Particle, IMovableParticle
 
 
     private readonly Random random = new();
-    protected override void MoveTo(int targetX, int targetY, Action<int, int, IParticle?> iterationCallback, Action<int, int, Vector2, IParticle?>? onCollisionCallback)
+    protected override RenderingUpdates MoveTo(int targetX, int targetY, Action<int, int, IParticle?>? iterationCallback, Action<int, int, Vector2, IParticle?>? onCollisionCallback)
     {
-        base.MoveTo(targetX, targetY, iterationCallback,
+        return base.MoveTo(targetX, targetY, iterationCallback,
 
            (pathX, pathY, collisionDirection, collidedParticle) =>
            {
