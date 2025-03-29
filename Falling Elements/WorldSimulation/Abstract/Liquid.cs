@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace WorldSimulation;
 
-public abstract class Liquid : MovableParticle
+public abstract class Liquid : MovableParticle, ILiquid
 {
     public override MoveDirection MoveDirection { get; } = MoveDirection.Down;
 

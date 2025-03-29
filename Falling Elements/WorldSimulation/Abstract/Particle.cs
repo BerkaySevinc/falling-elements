@@ -15,7 +15,7 @@ public abstract class Particle : IParticle
 {
     public abstract Color Color { get; protected set; }
     protected virtual float ColorShiftFactor { get; } = 0.3F;
-    protected virtual int ColorVariationCount { get; } = 20;
+    protected virtual uint ColorVariationCount { get; } = 20;
 
 
     private float _x;
@@ -80,9 +80,12 @@ public abstract class Particle : IParticle
     private Random random = new();
     public Particle(World world, int gridX, int gridY)
     {
-        if (ColorVariationCount is not 0)
+        if (ColorVariationCount <= 1) ColorVariationCount = 1;
+        if (ColorVariationCount > world.MaxColorVariationCount) ColorVariationCount = world.MaxColorVariationCount;
+
+        if (ColorVariationCount is not 1)
         {
-            float randomColorFactor = ColorShiftFactor - (random.Next(ColorVariationCount + 1) * (ColorShiftFactor / ColorVariationCount * 2));
+            float randomColorFactor = ColorShiftFactor - (random.Next((int)ColorVariationCount) * (ColorShiftFactor / (ColorVariationCount - 1) * 2));
             Color = ChangeColorBrightness(Color, randomColorFactor);
         }
 
@@ -341,7 +344,7 @@ public abstract class Particle : IParticle
         for (int i = 1; i <= longerSideAbs; i++)
         {
             int longerSideIncrease = i * longerSideModifier;
-            int shorterSideIncrease = (int)Math.Round(i * slope, MidpointRounding.AwayFromZero);
+            int shorterSideIncrease = (int)Math.Round(longerSideIncrease * slope, MidpointRounding.AwayFromZero);
 
             int newX, newY;
             if (isYDiffIsLarger)

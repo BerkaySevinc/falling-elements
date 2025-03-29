@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace WorldSimulation;
 
-public abstract class ImmovableSolid : Particle, ISolid
+public abstract class ImmovableSolid : Particle, IImmovableSolid
 {
     protected ImmovableSolid(World world, int gridX, int gridY) : base(world, gridX, gridY) { }
 

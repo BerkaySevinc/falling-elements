@@ -1,6 +1,9 @@
+using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
+using System.Drawing.Configuration;
+using System.Numerics;
 using System.Windows.Forms;
 
 using WorldSimulation;
@@ -29,7 +32,7 @@ public partial class Grid : Form
     static int fpsFix = 60;
     static bool isFpsFixerEnabled = false;
 
-    const int drawSpace = 60;
+    const int drawSpace = 66;
 
     // Creates world.
     Graphics graphics;
@@ -41,6 +44,7 @@ public partial class Grid : Form
         world = new World(Width / scale, (Height - 39 - drawSpace) / scale)
         {
             Gravity = 10F,
+            MaxColorVariationCount = 20
         };
 
         renderer = new WorldRenderer(world, this, new(0, drawSpace), new(Width - 16, Height - 39 - drawSpace))
@@ -58,8 +62,8 @@ public partial class Grid : Form
     }
 
     private SolidBrush cleanerBrush;
-    int expectedFrameTimeoutMilliSeconds = 1000 / fpsFix;
-    public FpsCounter FpsCounter = new(new(0, 0, 0, 0, 50));
+    private int expectedFrameTimeoutMilliSeconds = 1000 / fpsFix;
+    private FpsCounter fpsCounter = new(new(0, 0, 0, 0, 50));
     private void Render()
     {
         Task drawTask = Task.CompletedTask;
@@ -72,7 +76,7 @@ public partial class Grid : Form
             drawTask.Wait();
 
             // Display FPS
-            int fps = (int)FpsCounter.FpsRender;
+            int fps = (int)fpsCounter.FpsRender;
             fps = fps > 10000 ? 10000 : fps;
             graphics.FillRectangle(cleanerBrush, 0, 0, 200, drawSpace);
             graphics.DrawString(
@@ -90,7 +94,7 @@ public partial class Grid : Form
             //lblFreeFallingParticleCount.Text = "Free Falling Particle Count: " + world.UpdatingParticlesByAltitude.Sum(l => l.Count(p => p is MovableParticle movableParticle && movableParticle.IsFreeFalling));
             //lblRenderedCellCount.Text = "Rendered Cell Count: " + renderingUpdates.Updates.Count;
 
-            var elapsed = FpsCounter.RestartFrame();
+            var elapsed = fpsCounter.RestartFrame();
 
             // FPS fixer
             if (isFpsFixerEnabled && elapsed.Milliseconds < expectedFrameTimeoutMilliSeconds)
@@ -105,7 +109,9 @@ public partial class Grid : Form
 
 
     // Adds particle if left mouse button is held down.
-    bool isMouseButtonLeftDown = false;
+    private bool drawBetweenMouseMove = false;
+    private bool isMouseButtonLeftDown = false;
+    private System.Drawing.Point initialMouseWorldLocation;
     private void RendererMouseDown(object? sender, MouseDownEventArgs e)
     {
         if (e.Button is not MouseButtons.Left) return;
@@ -121,13 +127,73 @@ public partial class Grid : Form
 
             Thread.Sleep(300);
 
+            if (!isMouseButtonLeftDown) return;
+
+            AddParticles(mouseWorldLocation);
+            initialMouseWorldLocation = mouseWorldLocation;
+
             while (isMouseButtonLeftDown)
             {
-                Thread.Sleep(20);
-                AddParticles(mouseWorldLocation);
+                Thread.Sleep(1);
+
+                if (!drawBetweenMouseMove) AddParticles(mouseWorldLocation);
+                else
+                {
+                    IterateBetweenTwoPoints(initialMouseWorldLocation, mouseWorldLocation, AddParticles);
+                    initialMouseWorldLocation = mouseWorldLocation;
+                }
             }
         });
     }
+
+    private void IterateBetweenTwoPoints(System.Drawing.Point start, System.Drawing.Point end, Action<System.Drawing.Point> iterationCallback)
+    {
+        // Calculates diffs.
+        int xDiff = end.X - start.X;
+        int yDiff = end.Y - start.Y;
+
+        // Returns if points are same.
+        if (xDiff is 0 && yDiff is 0)
+        {
+            iterationCallback?.Invoke(start);
+            return;
+        }
+
+        // Gets which is larger.
+        bool isYDiffIsLarger = Math.Abs(xDiff) > Math.Abs(yDiff);
+
+        // Get longer & shorter sides.
+        (int longerSide, int shorterSide) = isYDiffIsLarger ? (xDiff, yDiff) : (yDiff, xDiff);
+
+        // Calculates slope.
+        float slope = (float)shorterSide / longerSide;
+
+
+        int longerSideAbs = Math.Abs(longerSide);
+        int longerSideModifier = longerSide > 0 ? 1 : -1;
+
+        for (int i = 0; i <= longerSideAbs; i++)
+        {
+            int longerSideIncrease = i * longerSideModifier;
+            int shorterSideIncrease = (int)Math.Round(longerSideIncrease * slope, MidpointRounding.AwayFromZero);
+
+            int newX, newY;
+            if (isYDiffIsLarger)
+            {
+                newX = start.X + longerSideIncrease;
+                newY = start.Y + shorterSideIncrease;
+            }
+            else
+            {
+                newY = start.Y + longerSideIncrease;
+                newX = start.X + shorterSideIncrease;
+            }
+
+            iterationCallback?.Invoke(new System.Drawing.Point(newX, newY));
+        }
+    }
+
+
 
     private void RendererMouseUp(object? sender, MouseUpEventArgs e)
     {
@@ -138,7 +204,7 @@ public partial class Grid : Form
         renderer!.MouseMove -= RendererMouseMove;
     }
 
-    System.Drawing.Point mouseWorldLocation;
+    private System.Drawing.Point mouseWorldLocation;
     private void RendererMouseMove(object? sender, MouseMoveEventArgs e)
     {
         if (e.Button is not MouseButtons.Left) return;
@@ -147,44 +213,46 @@ public partial class Grid : Form
     }
 
 
-    Action<System.Drawing.Point, int>? particleAddingMethod;
+    private Action<System.Drawing.Point, int>? particleAddingMethod;
     private void AddParticles(System.Drawing.Point worldLocation)
-        => particleAddingMethod!.Invoke(worldLocation, radius);
+        => particleAddingMethod!.Invoke(worldLocation, brushRadius);
 
 
     private void btnStone_Click(object sender, EventArgs e)
     {
         particleAddingMethod = world!.AddParticle<Stone>;
-        DisplaySelection(sender);
+        ParticleSelectionChanged(sender, true);
     }
 
     private void btnSand_Click(object sender, EventArgs e)
     {
         particleAddingMethod = world!.AddParticle<Sand>;
-        DisplaySelection(sender);
+        ParticleSelectionChanged(sender, false);
     }
 
     private void btnDirt_Click(object sender, EventArgs e)
     {
         particleAddingMethod = world!.AddParticle<Dirt>;
-        DisplaySelection(sender);
+        ParticleSelectionChanged(sender, false);
     }
 
     private void btnWater_Click(object sender, EventArgs e)
     {
         particleAddingMethod = world!.AddParticle<Water>;
-        DisplaySelection(sender);
+        ParticleSelectionChanged(sender, false);
     }
 
     private void btnDelete_Click(object sender, EventArgs e)
     {
         particleAddingMethod = world!.DeleteParticle;
-        DisplaySelection(btnDeleteBack);
+        ParticleSelectionChanged(btnDeleteBack, true);
     }
 
-    private void DisplaySelection(object sender)
+    private void ParticleSelectionChanged(object sender, bool drawBetween)
     {
-        Control button = (Control)sender;
+        drawBetweenMouseMove = drawBetween;
+
+        var button = (Control)sender;
 
         int offset = button != btnDeleteBack ? 4 : 2;
 
@@ -194,11 +262,11 @@ public partial class Grid : Form
     }
 
 
-    int radius = 1;
+    private int brushRadius = 1;
     private void trackBarRadius_ValueChanged(object sender, EventArgs e)
     {
-        radius = trackBarRadius.Value;
-        lblRadius.Text = radius.ToString();
+        brushRadius = trackBarRadius.Value;
+        lblRadius.Text = brushRadius.ToString();
     }
 
 

@@ -30,6 +30,8 @@ public class World
     public List<IParticle>[] UpdatingParticlesByAltitude { get; }
 
     public float Gravity { get; init; } = 10;
+    public uint MaxColorVariationCount { get; init; } = 20;
+
 
     public int ParticleCount { get; private set; }
 
