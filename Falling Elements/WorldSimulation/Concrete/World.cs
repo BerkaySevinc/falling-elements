@@ -27,12 +27,11 @@ public class World
     public int Bottom { get; }
 
     public IParticle?[,] Grid { get; }
+    public List<IParticle>[] UpdatingParticlesByAltitude { get; }
 
     public float Gravity { get; init; } = 10;
 
     public int ParticleCount { get; private set; }
-    public int UpdatingParticleCount => updatingParticlesByAltitude.Sum(l => l.Count);
-    public int FreeFallingParticleCount => updatingParticlesByAltitude.Sum(l => l.Count(p => p is MovableParticle movableParticle && movableParticle.IsFreeFalling));
 
 
 
@@ -44,16 +43,16 @@ public class World
         Grid = new IParticle?[Width, Height];
 
         // Creates particles by altitude list.
-        updatingParticlesByAltitude = new List<IParticle>[height];
+        UpdatingParticlesByAltitude = new List<IParticle>[height];
 
         for (int i = 0; i < Height; i++)
-            updatingParticlesByAltitude[i] = new List<IParticle>();
+            UpdatingParticlesByAltitude[i] = new List<IParticle>();
     }
     public World(Size size) : this(size.Width, size.Height) { }
     public World(int size) : this(size, size) { }
 
 
-    Dictionary<(int gridX, int gridY), Type> particlesToCreate = new();
+    private Dictionary<(int gridX, int gridY), Type> particlesToCreate = new();
     public void AddParticle<T>(System.Drawing.Point location, int radius) where T : class, IParticle
     {
         if (radius <= 0) return;
@@ -85,7 +84,7 @@ public class World
                 }
     }
 
-    List<(int gridX, int gridY)> particlesToDelete = new();
+    private List<(int gridX, int gridY)> particlesToDelete = new();
     public void DeleteParticle(System.Drawing.Point location, int radius)
     {
         if (radius <= 0) return;
@@ -115,8 +114,7 @@ public class World
                 }
     }
 
-    Stopwatch deltaTimer = new();
-    public List<IParticle>[] updatingParticlesByAltitude;
+    private Stopwatch deltaTimer = new();
     public RenderingUpdates Update()
     {
         // Calculates delta time.
@@ -128,7 +126,7 @@ public class World
         // Loops through all altitudes.
         for (int floorY = Bottom; floorY >= 0; floorY--)
         {
-            var altitudeParticleList = updatingParticlesByAltitude[floorY].ToList();
+            var altitudeParticleList = UpdatingParticlesByAltitude[floorY].ToList();
 
             // Loops through all particles at the altitude.
             for (int i = altitudeParticleList.Count - 1; i >= 0; i--)

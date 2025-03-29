@@ -51,8 +51,8 @@ public abstract class Particle : IParticle
 
             if (IsUpdating)
             {
-                world.updatingParticlesByAltitude[_gridY].Remove(this);
-                world.updatingParticlesByAltitude[value].Add(this);
+                world.UpdatingParticlesByAltitude[_gridY].Remove(this);
+                world.UpdatingParticlesByAltitude[value].Add(this);
             }
 
             _gridY = value;
@@ -70,8 +70,8 @@ public abstract class Particle : IParticle
 
             _isUpdating = value;
 
-            if (value) world.updatingParticlesByAltitude[GridY].Add(this);
-            else world.updatingParticlesByAltitude[GridY].Remove(this);
+            if (value) world.UpdatingParticlesByAltitude[GridY].Add(this);
+            else world.UpdatingParticlesByAltitude[GridY].Remove(this);
         }
     }
 
@@ -97,7 +97,7 @@ public abstract class Particle : IParticle
         world.Grid[GridX, GridY] = this;
 
         // Add particle to list.
-        world.updatingParticlesByAltitude[GridY].Add(this);
+        world.UpdatingParticlesByAltitude[GridY].Add(this);
 
         UpdateParticlesAround();
     }
@@ -107,7 +107,7 @@ public abstract class Particle : IParticle
         world.Grid[GridX, GridY] = null;
 
         // Remove particle from list.
-        world.updatingParticlesByAltitude[GridY].Remove(this);
+        world.UpdatingParticlesByAltitude[GridY].Remove(this);
 
         UpdateParticlesAround();
     }

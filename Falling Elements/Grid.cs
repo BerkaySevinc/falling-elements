@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -8,205 +9,201 @@ using WorldSimulation.Renderer;
 
 
 
-// should i add "Base" to abstract classes
 
-// movableparticlelarda movedirectiona göre loop olmalý, örneðin aþþa düþen parçacýklara aþþadan baþlayan loop yada tam tersi gibi, eðer direction vektörü tek yönlü deðilse örneðin -0.8, 0.5 gibi bu sefer mutlak deðerlerinin en büyük olan yön seçilir yani -0.8 ve bu yüzden soldan baþlayan loopda update edilmeli, vektörün 2 axisi de aynýysa örneðin 1, 1 bu durumda çapraz looplardamý üretmeliyim?
-
-// double buffer vs gibi renderla ilgili þeylere bak
+namespace Falling_Elements;
 
 
-// particlesByAltitude public bi field öyle olmamalý o kýsýmlarý düzenle
-// fps yükselt
-// renderingi iyileþtir
-// update de threading uygulanabilirmi?
-
-
-//! GUI & Demo
-// TODO : scale & reset settings ui
-// TODO : grid kodlarýný iyileþtir, seçilen particlý belirt arkasýna panel koyarak vs.
-// TODO : son 1 saniyede fps droplarýný gösteren bi indicatör koy ekrana
-
-//! MEKANÝKLER
-// çaprazdan replace edince çapraza deil üste çýkmalý
-// aþþadan replace edincede yukarýsý yerine nullda yanlara çýkmasý daha mantýklý gibi
-
-//! OPTÝMÝZASYON
-// UNDONE : DRAWÝNG OPTÝMÝZASYONU OLARAK SADECE LÝNE OLARAK EN BÜYÜÐÜ ALIYO, ONUN YERÝNE EN BÜYÜK DÖRTGENÝ SEÇMELÝ VE ÇÝZMELÝ
-// TODO : çok emin deðilim ama update kýsmýnda optimizasyon olarak tüm particlelarý deðilde, sadece movingleri looplamanýn bi yolu varmý?
-// TODO : multithreading ekle
-
-
-
-namespace Falling_Elements
+public partial class Grid : Form
 {
-    public partial class Grid : Form
+    public Grid()
     {
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-        public Grid()
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+        InitializeComponent();
+
+        graphics = CreateGraphics();
+        cleanerBrush = new SolidBrush(BackColor);
+    }
+
+
+    const int scale = 5;
+
+    static int fpsFix = 60;
+    static bool isFpsFixerEnabled = false;
+
+    const int drawSpace = 60;
+
+    // Creates world.
+    Graphics graphics;
+    World? world;
+    WorldRenderer? renderer;
+    [MemberNotNull(nameof(world))]
+    private void Grid_Shown(object sender, EventArgs e)
+    {
+        world = new World(Width / scale, (Height - 39 - drawSpace) / scale)
         {
-            InitializeComponent();
-        }
+            Gravity = 10F,
+        };
 
-
-        const int scale = 5;
-
-        static int fpsFix = 60;
-        static bool isFpsFixerEnabled = false;
-
-        const int drawSpace = 60;
-
-        // Creates world.
-        Graphics graphics;
-        World world;
-        WorldRenderer renderer;
-        private void Grid_Shown(object sender, EventArgs e)
+        renderer = new WorldRenderer(world, this, new(0, drawSpace), new(Width - 16, Height - 39 - drawSpace))
         {
-            world = new World(Width / scale, (Height - 39 - drawSpace) / scale)
-            {
-                Gravity = 10F,
-            };
 
-            renderer = new WorldRenderer(world, this, new(0, drawSpace), new(Width - 16, Height - 39 - drawSpace))
-            {
+        };
 
-            };
+        renderer.MouseDown += RendererMouseDown;
+        renderer.MouseUp += RendererMouseUp;
 
-            renderer.MouseDown += RendererMouseDown;
-            renderer.MouseUp += RendererMouseUp;
+        btnSand_Click(btnSand, EventArgs.Empty);
+        trackBarRadius.Value = 2;
 
-            particleAddingMethod = world.AddParticle<Sand>;
-            trackBarRadius.Value = 2;
+        Render();
+    }
 
-            graphics = CreateGraphics();
-            cleanerBrush = new SolidBrush(BackColor);
-
-            Render();
-        }
-
-        private SolidBrush cleanerBrush;
-        int expectedFrameTimeoutMilliSeconds = 1000 / fpsFix;
-        public FpsCounter FpsCounter = new(new(0, 0, 0, 0, 50));
-        private void Render()
+    private SolidBrush cleanerBrush;
+    int expectedFrameTimeoutMilliSeconds = 1000 / fpsFix;
+    public FpsCounter FpsCounter = new(new(0, 0, 0, 0, 50));
+    private void Render()
+    {
+        Task drawTask = Task.CompletedTask;
+        while (true)
         {
-            Task drawTask = Task.CompletedTask;
-            while (true)
+            // Update world.
+            var renderingUpdates = world!.Update();
+
+            // Wait for initial drawing to finish.
+            drawTask.Wait();
+
+            // Display FPS
+            int fps = (int)FpsCounter.FpsRender;
+            fps = fps > 10000 ? 10000 : fps;
+            graphics.FillRectangle(cleanerBrush, 0, 0, 200, drawSpace);
+            graphics.DrawString(
+                "FPS: " + fps,
+                new Font("Consolas", 12),
+                fps > 60 ? Brushes.White : fps > 30 ? Brushes.Yellow : Brushes.Red,
+                30, 20);
+
+            // Draw updated world.
+            drawTask = Task.Run(() => renderer!.RenderChanges(renderingUpdates));
+
+            // Display world info.
+            //lblParticleCount.Text = "Particle Count: " + world.ParticleCount;
+            //lblUpdatingParticleCount.Text = "Updating Particle Count: " + world.UpdatingParticlesByAltitude.Sum(l => l.Count);
+            //lblFreeFallingParticleCount.Text = "Free Falling Particle Count: " + world.UpdatingParticlesByAltitude.Sum(l => l.Count(p => p is MovableParticle movableParticle && movableParticle.IsFreeFalling));
+            //lblRenderedCellCount.Text = "Rendered Cell Count: " + renderingUpdates.Updates.Count;
+
+            var elapsed = FpsCounter.RestartFrame();
+
+            // FPS fixer
+            if (isFpsFixerEnabled && elapsed.Milliseconds < expectedFrameTimeoutMilliSeconds)
             {
-                // Update world.
-                var renderingUpdates = world.Update();
-
-                // Wait for initial drawing to finish.
-                drawTask.Wait();
-
-                // Display FPS
-                int fps = (int)FpsCounter.FpsRender;
-                fps = fps > 10000 ? 10000 : fps;
-                graphics.FillRectangle(cleanerBrush, 0, 0, 200, drawSpace);
-                graphics.DrawString(
-                    "FPS: " + fps,
-                    new Font("Consolas", 12),
-                    fps > 60 ? Brushes.White : fps > 30 ? Brushes.Yellow : Brushes.Red,
-                    30, 16);
-
-                // Draw updated world.
-                drawTask = Task.Run(() => renderer.RenderChanges(renderingUpdates));
-
-                // Display world info.
-                lblParticleCount.Text = "Particle Count: " + world.ParticleCount;
-                lblUpdatingParticleCount.Text = "Updating Particle Count: " + world.UpdatingParticleCount;
-                lblFreeFallingParticleCount.Text = "Free Falling Particle Count: " + world.FreeFallingParticleCount;
-                lblRenderedCellCount.Text = "Rendered Cell Count: " + renderingUpdates.Updates.Count;
-
-                var elapsed = FpsCounter.RestartFrame();
-
-                // FPS fixer
-                if (isFpsFixerEnabled && elapsed.Milliseconds < expectedFrameTimeoutMilliSeconds)
-                {
-                    int timeout = expectedFrameTimeoutMilliSeconds - elapsed.Milliseconds;
-                    Thread.Sleep(timeout);
-                }
-
-                Application.DoEvents();
+                int timeout = expectedFrameTimeoutMilliSeconds - elapsed.Milliseconds;
+                Thread.Sleep(timeout);
             }
+
+            Application.DoEvents();
         }
+    }
 
 
-        // Adds particle if left mouse button is held down.
-        bool isMouseButtonLeftDown = false;
-        private void RendererMouseDown(object? sender, MouseDownEventArgs e)
+    // Adds particle if left mouse button is held down.
+    bool isMouseButtonLeftDown = false;
+    private void RendererMouseDown(object? sender, MouseDownEventArgs e)
+    {
+        if (e.Button is not MouseButtons.Left) return;
+
+        mouseWorldLocation = e.WorldLocation;
+        isMouseButtonLeftDown = true;
+
+        renderer!.MouseMove += RendererMouseMove;
+
+        Task.Run(() =>
         {
-            if (e.Button is not MouseButtons.Left) return;
+            AddParticles(mouseWorldLocation);
 
-            mouseWorldLocation = e.WorldLocation;
-            isMouseButtonLeftDown = true;
+            Thread.Sleep(300);
 
-            renderer.MouseMove += RendererMouseMove;
-
-            Task.Run(() =>
+            while (isMouseButtonLeftDown)
             {
+                Thread.Sleep(20);
                 AddParticles(mouseWorldLocation);
+            }
+        });
+    }
 
-                Thread.Sleep(300);
+    private void RendererMouseUp(object? sender, MouseUpEventArgs e)
+    {
+        if (e.Button is not MouseButtons.Left) return;
 
-                while (isMouseButtonLeftDown)
-                {
-                    Thread.Sleep(20);
-                    AddParticles(mouseWorldLocation);
-                }
-            });
-        }
+        isMouseButtonLeftDown = false;
 
-        private void RendererMouseUp(object? sender, MouseUpEventArgs e)
-        {
-            if (e.Button is not MouseButtons.Left) return;
+        renderer!.MouseMove -= RendererMouseMove;
+    }
 
-            isMouseButtonLeftDown = false;
+    System.Drawing.Point mouseWorldLocation;
+    private void RendererMouseMove(object? sender, MouseMoveEventArgs e)
+    {
+        if (e.Button is not MouseButtons.Left) return;
 
-            renderer.MouseMove -= RendererMouseMove;
-        }
-
-        System.Drawing.Point mouseWorldLocation;
-        private void RendererMouseMove(object? sender, MouseMoveEventArgs e)
-        {
-            if (e.Button is not MouseButtons.Left) return;
-
-            mouseWorldLocation = e.WorldLocation;
-        }
+        mouseWorldLocation = e.WorldLocation;
+    }
 
 
-        Action<System.Drawing.Point, int> particleAddingMethod;
-        private void AddParticles(System.Drawing.Point worldLocation)
-        {
-            particleAddingMethod.Invoke(worldLocation, radius);
-        }
-
-        private void btnStone_Click(object sender, EventArgs e)
-            => particleAddingMethod = world.AddParticle<Stone>;
-
-        private void btnSand_Click(object sender, EventArgs e)
-            => particleAddingMethod = world.AddParticle<Sand>;
-
-        private void btnDirt_Click(object sender, EventArgs e)
-            => particleAddingMethod = world.AddParticle<Dirt>;
-
-        private void btnWater_Click(object sender, EventArgs e)
-            => particleAddingMethod = world.AddParticle<Water>;
-        private void btnDelete_Click(object sender, EventArgs e)
-            => particleAddingMethod = world.DeleteParticle;
-
-        int radius = 1;
-        private void trackBarRadius_ValueChanged(object sender, EventArgs e)
-        {
-            radius = trackBarRadius.Value;
-            lblRadius.Text = radius.ToString();
-        }
+    Action<System.Drawing.Point, int>? particleAddingMethod;
+    private void AddParticles(System.Drawing.Point worldLocation)
+        => particleAddingMethod!.Invoke(worldLocation, radius);
 
 
-        private void Grid_FormClosed(object sender, FormClosedEventArgs e)
-        {
-            Environment.Exit(0);
-        }
+    private void btnStone_Click(object sender, EventArgs e)
+    {
+        particleAddingMethod = world!.AddParticle<Stone>;
+        DisplaySelection(sender);
+    }
+
+    private void btnSand_Click(object sender, EventArgs e)
+    {
+        particleAddingMethod = world!.AddParticle<Sand>;
+        DisplaySelection(sender);
+    }
+
+    private void btnDirt_Click(object sender, EventArgs e)
+    {
+        particleAddingMethod = world!.AddParticle<Dirt>;
+        DisplaySelection(sender);
+    }
+
+    private void btnWater_Click(object sender, EventArgs e)
+    {
+        particleAddingMethod = world!.AddParticle<Water>;
+        DisplaySelection(sender);
+    }
+
+    private void btnDelete_Click(object sender, EventArgs e)
+    {
+        particleAddingMethod = world!.DeleteParticle;
+        DisplaySelection(btnDeleteBack);
+    }
+
+    private void DisplaySelection(object sender)
+    {
+        Control button = (Control)sender;
+
+        int offset = button != btnDeleteBack ? 4 : 2;
+
+        pnlSelected.Location = new System.Drawing.Point(button.Location.X - offset, button.Location.Y - offset);
+
+        btnDeleteBack.Visible = button != btnDeleteBack;
+    }
 
 
+    int radius = 1;
+    private void trackBarRadius_ValueChanged(object sender, EventArgs e)
+    {
+        radius = trackBarRadius.Value;
+        lblRadius.Text = radius.ToString();
+    }
+
+
+    private void Grid_FormClosed(object sender, FormClosedEventArgs e)
+    {
+        Environment.Exit(0);
     }
 }
