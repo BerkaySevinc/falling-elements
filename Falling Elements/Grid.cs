@@ -146,7 +146,7 @@ public partial class Grid : Form
         });
     }
 
-    private void IterateBetweenTwoPoints(System.Drawing.Point start, System.Drawing.Point end, Action<System.Drawing.Point> iterationCallback)
+    private static void IterateBetweenTwoPoints(System.Drawing.Point start, System.Drawing.Point end, Action<System.Drawing.Point> iterationCallback)
     {
         // Calculates diffs.
         int xDiff = end.X - start.X;
