@@ -15,8 +15,8 @@ A simple 2D physics sandbox where different materials like sand and water fall, 
 </br>
 
 # Medias
-![Video 1](https://github.com/BerkaySevinc/falling-elements/blob/v0.4/Media%20Introduction/Video%201.gif)
-![Video 2](https://github.com/BerkaySevinc/falling-elements/blob/v0.4/Media%20Introduction/Video%202.gif)
-![Video 3](https://github.com/BerkaySevinc/falling-elements/blob/v0.4/Media%20Introduction/Video%203.gif)
+![Video 1](https://github.com/BerkaySevinc/falling-elements/blob/v0.4/Introduction%20Media/Video%201.gif)
+![Video 2](https://github.com/BerkaySevinc/falling-elements/blob/v0.4/Introduction%20Media/Video%202.gif)
+![Video 3](https://github.com/BerkaySevinc/falling-elements/blob/v0.4/Introduction%20Media/Video%203.gif)
 
 
