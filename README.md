@@ -1,7 +1,7 @@
 
 # Falling Elements
 
-Falling Sand simulation written in C#.</br>
+Falling Sand Simulation written in C#.</br>
 It uses a simple 2D grid system to update and render each particle that behaves like sand, water, or other materials.
 </br>
 </br>
