@@ -15,7 +15,7 @@ The core simulation logic is separated into a reusable library, with a demo appl
 - The mouse is used to "draw" particles on the screen.
 </br>
 
-# Medias
+# Media
 ![Video 1](Introduction%20Media/Video%201.gif)
 ![Video 2](Introduction%20Media/Video%202.gif)
 ![Video 3](Introduction%20Media/Video%203.gif)
