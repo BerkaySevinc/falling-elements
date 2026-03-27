@@ -33,7 +33,7 @@ public abstract class MovableParticle : Particle, IMovableParticle
 
            (pathX, pathY, collisionDirection, collidedParticle) =>
            {
-               // If collision horizontal
+               // Handles horizontal collision.
                if (collisionDirection.X is not 0)
                {
                    X = collisionDirection.X > 0 ? pathX + 0.999F : pathX;
@@ -42,12 +42,12 @@ public abstract class MovableParticle : Particle, IMovableParticle
                    Velocity *= Vector2.UnitY;
                }
 
-               // If collision vertical
+               // Handles vertical collision.
                else
                {
                    Y = collisionDirection.Y > 0 ? pathY + 0.999F : pathY;
 
-                   // Return if collided to falling particle.
+                   // Returns early if collided with a falling particle.
                    if (collidedParticle is MovableParticle movableParticle && movableParticle.IsFreeFalling)
                    {
                        Velocity = new Vector2(Velocity.X, Math.Min(Velocity.Y, movableParticle.Velocity.Y));

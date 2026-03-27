@@ -75,7 +75,7 @@ public abstract class MovableSolid : MovableParticle, IMovableSolid
         // Move to target location.
         RenderingUpdates? renderingUpdates = MoveTo(targetX, targetY, null, null);
 
-        // Return changes.
+        // Returns the rendering changes.
         return renderingUpdates;
     }
 
@@ -90,12 +90,12 @@ public abstract class MovableSolid : MovableParticle, IMovableSolid
 
            (pathX, pathY, collisionDirection, collidedParticle) =>
            {
-               // If collision vertical
+               // Handles vertical collision.
                if (collisionDirection.Y is not 0)
                {
                    if (!IsFreeFalling)
                    {
-                       // Convert it to horizontal velocity.
+                       // Converts vertical velocity to horizontal velocity.
                        float horizontalVelocity = initialVelocity.Y / frictionForce;
 
                        // Set velocity direction to left if particle already has left velocity.

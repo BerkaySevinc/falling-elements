@@ -51,7 +51,7 @@ public abstract class Liquid : MovableParticle, ILiquid
         // Move to target location.
         RenderingUpdates? renderingUpdates = MoveTo(targetX, targetY, null, null);
 
-        // Return changes.
+        // Returns the rendering changes.
         return renderingUpdates;
     }
 
@@ -61,7 +61,7 @@ public abstract class Liquid : MovableParticle, ILiquid
 
            (pathX, pathY, collisionDirection, collidedParticle) =>
            {
-               // If collision vertical
+               // Handles horizontal collision.
                if (collisionDirection.X is not 0)
                {
                    if (!IsFreeFalling)
@@ -80,7 +80,7 @@ public abstract class Liquid : MovableParticle, ILiquid
                    }
                }
 
-               // If collision horizontal
+               // Handles vertical collision.
                else
                {
                    bool isLeftMovable = !IsOnLeftBound() && IsParticleMovable(GetParticleByLocation(GridX - 1, GridY));

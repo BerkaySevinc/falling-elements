@@ -21,17 +21,17 @@ public class RenderingUpdates
 
     public void Add((int x, int y) key, (Color? oldColor, Color? newColor) value)
     {
-        // Add value if not existing.
+        // Adds the value if the key does not already exist.
         if (!Updates.TryGetValue(key, out (Color? oldColor, Color? newColor) existingValue))
         {
             Updates.Add(key, value);
         }
-        // If exists check for color change.
+        // If the key exists, checks for a color change.
         else
         {
-            // Remove if not changed.
+            // Removes the entry if the color has not changed.
             if (value.newColor == existingValue.oldColor) Updates.Remove(key);
-            // Set new color if changed.
+            // Updates the color if it has changed.
             else
             {
                 existingValue.newColor = value.newColor;

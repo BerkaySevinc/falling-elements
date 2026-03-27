@@ -162,7 +162,7 @@ public partial class Grid : Form
         // Gets which is larger.
         bool isYDiffIsLarger = Math.Abs(xDiff) > Math.Abs(yDiff);
 
-        // Get longer & shorter sides.
+        // Gets longer and shorter sides.
         (int longerSide, int shorterSide) = isYDiffIsLarger ? (xDiff, yDiff) : (yDiff, xDiff);
 
         // Calculates slope.

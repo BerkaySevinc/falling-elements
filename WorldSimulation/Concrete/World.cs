@@ -66,7 +66,7 @@ public class World
                     double dist = Math.Pow(location.X - gridX, 2) + Math.Pow(location.Y - gridY, 2);
                     if (dist > radiusSquare) continue;
 
-                    // Returns if outsite of the bounds.
+                    // Skips if outside of the world bounds.
                     if (gridX < 0 || gridX >= Width) continue;
                     if (gridY < 0 || gridY >= Height) continue;
 
@@ -96,7 +96,7 @@ public class World
                     double dist = Math.Pow(location.X - gridX, 2) + Math.Pow(location.Y - gridY, 2);
                     if (dist > radiusSquare) continue;
 
-                    // Returns if outsite of the bounds.
+                    // Skips if outside of the world bounds.
                     if (gridX < 0 || gridX >= Width) continue;
                     if (gridY < 0 || gridY >= Height) continue;
 

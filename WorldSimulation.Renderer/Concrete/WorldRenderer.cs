@@ -201,7 +201,7 @@ public class WorldRenderer
             if (x == (targetLine.right + 1) && y == targetLine.y && color == targetLine.color)
                 targetLine.right++;
 
-            // Else create new line.
+            // Starts a new line.
             else
             {
                 lines.Add(targetLine);

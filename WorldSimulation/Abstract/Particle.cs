@@ -92,7 +92,7 @@ public abstract class Particle : IParticle
         // Adds particle to grid.
         world.Grid[GridX, GridY] = this;
 
-        // Add particle to list.
+        // Adds particle to list.
         world.UpdatingParticlesByAltitude[GridY].Add(this);
 
         UpdateParticlesAround();
@@ -102,7 +102,7 @@ public abstract class Particle : IParticle
     {
         world.Grid[GridX, GridY] = null;
 
-        // Remove particle from list.
+        // Removes particle from list.
         world.UpdatingParticlesByAltitude[GridY].Remove(this);
 
         UpdateParticlesAround();
@@ -238,14 +238,14 @@ public abstract class Particle : IParticle
             {
                 IParticle? targetParticle = GetParticleByLocation(pathX, pathY);
 
-                // Checks if target particle movable.
+                // Checks if the target particle is movable.
                 if (!IsParticleMovable(targetParticle))
                 {
                     collidedParticle = targetParticle;
                     return false;
                 }
 
-                // Save grid changes.
+                // Saves grid changes.
                 renderingUpdates.Add((GridX, GridY), (Color, targetParticle?.Color));
                 renderingUpdates.Add((pathX, pathY), (targetParticle?.Color, Color));
 
@@ -255,7 +255,7 @@ public abstract class Particle : IParticle
 
                 if (targetParticle is not null)
                 {
-                    // Set target particles new location.
+                    // Sets the target particle's new location.
                     targetParticle.X = GridX + 0.5F;
                     targetParticle.Y = GridY + 0.5F;
                 }
@@ -263,7 +263,7 @@ public abstract class Particle : IParticle
                 UpdateParticlesAround(GridX, GridY);
                 UpdateParticlesAround(pathX, pathY);
 
-                // Set new location.
+                // Sets the new location.
                 X = pathX + 0.5F;
                 Y = pathY + 0.5F;
 
@@ -280,7 +280,7 @@ public abstract class Particle : IParticle
     }
     protected RenderingUpdates? MoveTo(float targetX, float targetY, Action<int, int, IParticle?>? iterationCallback, Action<int, int, Vector2, IParticle?>? onCollisionCallback)
     {
-        // If staying at the same cell update coordinates and return.
+        // If staying in the same cell, update coordinates and return.
         if (IsSameCell(targetX, targetY))
         {
             X = targetX;
@@ -298,7 +298,7 @@ public abstract class Particle : IParticle
                 onCollisionCallback?.Invoke(gridX, gridY, collisionDirection, collidedParticle);
             });
 
-        // Make floating number digits equal.
+        // Preserves the sub-cell floating-point offset after movement.
         if (!isCollided)
         {
             X = GridX + (targetX - (int)targetX);
@@ -321,7 +321,7 @@ public abstract class Particle : IParticle
         // Gets which is larger.
         bool isYDiffIsLarger = Math.Abs(xDiff) > Math.Abs(yDiff);
 
-        // Get longer & shorter sides.
+        // Gets longer and shorter sides.
         (int longerSide, int shorterSide) = isYDiffIsLarger ? (xDiff, yDiff) : (yDiff, xDiff);
 
         // Calculates slope.
@@ -351,7 +351,7 @@ public abstract class Particle : IParticle
                 newX = startX + shorterSideIncrease;
             }
 
-            // Edit if target is outside of the world.
+            // Clamps the target if it is outside of the world.
             bool isOutOfWorld = false;
             if (newX < world.Left)
             {
@@ -374,11 +374,11 @@ public abstract class Particle : IParticle
                 collisionDirection += new Vector2(0, 1);
             }
 
-            // Invoke iterationCallback if not collided
+            // Invokes iterationCallback if not collided.
             bool isCollided = isOutOfWorld;
             if (!isOutOfWorld) isCollided = !iterationCallback.Invoke(newX, newY);
 
-            // Invoke onCollisionCallback if collided.
+            // Invokes onCollisionCallback if a collision occurred.
             if (isCollided)
             {
                 if (onCollisionCallback is null) return;
@@ -427,7 +427,7 @@ public abstract class Particle : IParticle
             isCollisionOccurring = false;
         }
 
-        // Loop through path.
+        // Loops through the path.
         int current = start;
         int modifier = diff > 0 ? 1 : -1;
         int diffAbs = Math.Abs(diff);
@@ -475,7 +475,7 @@ public abstract class Particle : IParticle
             isCollisionOccurring = false;
         }
 
-        // Loop through path.
+        // Loops through the path.
         int current = start;
         int modifier = diff > 0 ? 1 : -1;
         int diffAbs = Math.Abs(diff);
