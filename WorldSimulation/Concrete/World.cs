@@ -1,15 +1,4 @@
-﻿using Falling_Elements;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.Eventing.Reader;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Channels;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 
 
 
@@ -55,16 +44,16 @@ public class World
 
 
     private Dictionary<(int gridX, int gridY), Type> particlesToCreate = new();
-    public void AddParticle<T>(System.Drawing.Point location, int radius) where T : class, IParticle
+    public void AddParticle<T>(Point location, int radius) where T : class, IParticle
     {
         if (radius <= 0) return;
 
         radius--;
 
-        int left = location.X - radius;
-        int right = location.X + radius;
-        int top = location.Y - radius;
-        int bottom = location.Y + radius;
+        int left = (int)location.X - radius;
+        int right = (int)location.X + radius;
+        int top = (int)location.Y - radius;
+        int bottom = (int)location.Y + radius;
 
         double radiusSquare = Math.Pow(radius, 2);
 
@@ -87,16 +76,16 @@ public class World
     }
 
     private List<(int gridX, int gridY)> particlesToDelete = new();
-    public void DeleteParticle(System.Drawing.Point location, int radius)
+    public void DeleteParticle(Point location, int radius)
     {
         if (radius <= 0) return;
 
         radius--;
 
-        int left = location.X - radius;
-        int right = location.X + radius;
-        int top = location.Y - radius;
-        int bottom = location.Y + radius;
+        int left = (int)location.X - radius;
+        int right = (int)location.X + radius;
+        int top = (int)location.Y - radius;
+        int bottom = (int)location.Y + radius;
 
         double radiusSquare = Math.Pow(radius, 2);
 

@@ -2,11 +2,16 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net7.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <RootNamespace>Falling_Elements</RootNamespace>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WorldSimulation.Renderer\WorldSimulation.Renderer.csproj" />
+    <ProjectReference Include="..\WorldSimulation\WorldSimulation.csproj" />
+  </ItemGroup>
 
 </Project>

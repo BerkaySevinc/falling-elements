@@ -8,7 +8,7 @@ namespace WorldSimulation;
 
 public class Dirt : MovableSolid
 {
-    public override Color Color { get; protected set; } = Color.SaddleBrown;
+    public override Color Color { get; protected set; } = Color.FromArgb(139, 69, 19);
     protected override float ColorShiftFactor { get; } = 0.2F;
 
     public override float Mass { get; } = 40;

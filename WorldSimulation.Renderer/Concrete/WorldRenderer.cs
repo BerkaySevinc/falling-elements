@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Security.Policy;
-using System.Text;
-using System.Threading.Channels;
-using System.Threading.Tasks;
+﻿using System.Drawing;
 using System.Windows.Forms;
+using ParticleColor = WorldSimulation.Color;
 
 namespace WorldSimulation.Renderer;
 
@@ -139,7 +133,7 @@ public class WorldRenderer
     }
     public WorldRenderer(World world, Control control, System.Drawing.Point location) : this(world, control, location, new Size(control.Width - location.X, control.Height - location.Y)) { }
     public WorldRenderer(World world, Control control, Size size) : this(world, control, new(0, 0), size) { }
-    public WorldRenderer(World world, Control control) : this(world, control, new(0, 0), control.Size) { }
+    public WorldRenderer(World world, Control control) : this(world, control, new(0, 0), new Size(control.Width, control.Height)) { }
 
 
 
@@ -174,10 +168,10 @@ public class WorldRenderer
 
     public void Clear()
     {
-        graphics.FillRectangle(cleanerBrush, new Rectangle(Location, Size));
+        graphics.FillRectangle(cleanerBrush, new Rectangle(Location, new System.Drawing.Size(Size.Width, Size.Height)));
     }
 
-    private List<(int y, int left, int right, Color? color)> DetectLines(RenderingUpdates renderingUpdates)
+    private List<(int y, int left, int right, ParticleColor? color)> DetectLines(RenderingUpdates renderingUpdates)
     {
         // Orders cells by "y", then "x".
         var orderedChanges =
@@ -188,10 +182,10 @@ public class WorldRenderer
 
         // Gets first cell as a line.
         var firstChange = orderedChanges.First();
-        (int y, int left, int right, Color? color) targetLine = (firstChange.Key.y, firstChange.Key.x, firstChange.Key.x, firstChange.Value.newColor);
+        (int y, int left, int right, ParticleColor? color) targetLine = (firstChange.Key.y, firstChange.Key.x, firstChange.Key.x, firstChange.Value.newColor);
 
         // Creates list with first line to keep all lines to draw.
-        var lines = new List<(int y, int left, int right, Color? color)>();
+        var lines = new List<(int y, int left, int right, ParticleColor? color)>();
 
         // Detects bigger horizontal lines to draw at once.
         for (int i = 1; i < orderedChanges.Count; i++)
@@ -219,7 +213,7 @@ public class WorldRenderer
         return lines;
     }
 
-    private void DrawLines(List<(int y, int left, int right, Color? color)> lines)
+    private void DrawLines(List<(int y, int left, int right, ParticleColor? color)> lines)
     {
         foreach (var rectangle in lines)
         {
@@ -308,15 +302,15 @@ public class WorldRenderer
 
 
     private SolidBrush cleanerBrush;
-    private Dictionary<Color, SolidBrush> particleBrushes = new();
-    private SolidBrush GetBrushByColor(Color? color)
+    private Dictionary<ParticleColor, SolidBrush> particleBrushes = new();
+    private SolidBrush GetBrushByColor(ParticleColor? color)
     {
         SolidBrush brush;
-        if (color is Color c)
+        if (color is ParticleColor c)
         {
             if (!particleBrushes.TryGetValue(c, out brush!))
             {
-                brush = new SolidBrush(c);
+                brush = new SolidBrush(System.Drawing.Color.FromArgb(c.A, c.R, c.G, c.B));
                 particleBrushes.Add(c, brush);
             }
         }

@@ -8,7 +8,7 @@ namespace WorldSimulation;
 
 public class Stone : ImmovableSolid
 {
-    public override Color Color { get; protected set; } = Color.Silver;
+    public override Color Color { get; protected set; } = Color.FromArgb(192, 192, 192);
     protected override float ColorShiftFactor { get; } = 0.35F;
 
 

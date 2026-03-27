@@ -213,9 +213,9 @@ public partial class Grid : Form
     }
 
 
-    private Action<System.Drawing.Point, int>? particleAddingMethod;
+    private Action<WorldSimulation.Point, int>? particleAddingMethod;
     private void AddParticles(System.Drawing.Point worldLocation)
-        => particleAddingMethod!.Invoke(worldLocation, brushRadius);
+        => particleAddingMethod!.Invoke(new WorldSimulation.Point(worldLocation.X, worldLocation.Y), brushRadius);
 
 
     private void btnStone_Click(object sender, EventArgs e)
