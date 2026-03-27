@@ -1,10 +1,4 @@
-using System;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Drawing;
-using System.Drawing.Configuration;
-using System.Numerics;
-using System.Windows.Forms;
 
 using WorldSimulation;
 using WorldSimulation.Renderer;
